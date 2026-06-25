@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Timeline Collapse Drop Down</title>
+<style>
+  :root{
+    --bg:#f8f7f4; --card:#fff; --line:#e0ddd6; --ink:#1a1a1a; --muted:#888;
+    --plan:#9a958c; --done:#3f9142; --delay:#cf3b3b;
+    --planbg:#F1EFE8; --donebg:#EAF3DE; --delaybg:#FCEBEB;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,'Sarabun',sans-serif;background:var(--bg);color:var(--ink);padding:1.5rem;line-height:1.45}
+  .wrap{max-width:1280px;margin:0 auto}
+  h1.title{font-size:24px;font-weight:700;outline:none;border-bottom:2px solid transparent;display:inline-block;padding:2px 4px;border-radius:4px}
+  h1.title:focus{border-bottom-color:var(--line);background:#fff}
+  .subtitle{font-size:12px;color:var(--muted);margin:2px 0 1rem 4px}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:center}
+  button{font-family:inherit;font-size:13px;font-weight:600;border:.5px solid var(--line);background:#fff;color:#222;padding:7px 13px;border-radius:8px;cursor:pointer;transition:.12s}
+  button:hover{background:#f3f1ec}
+  button.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+  button.primary:hover{background:#333}
+  .spacer{flex:1}
+
+  .panel{background:var(--card);border:.5px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
+  .panel-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:.5px solid var(--line);background:#faf9f6;font-size:12px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;user-select:none}
+  .panel-h .chev{transition:.15s;font-size:10px}
+  .panel.collapsed .panel-h .chev{transform:rotate(-90deg)}
+  .panel.collapsed .panel-b{display:none}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:#f3f1ec;padding:8px 10px;text-align:left;font-size:10.5px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;border-bottom:.5px solid var(--line)}
+  td{padding:5px 8px;border-bottom:.5px solid #f0ede8;vertical-align:middle}
+  tbody tr:hover{background:#faf9f6}
+  td input,td select,td textarea{width:100%;font-family:inherit;font-size:13px;border:.5px solid transparent;background:transparent;border-radius:6px;padding:5px 6px;color:#1a1a1a;resize:none}
+  td input:hover,td select:hover,td textarea:hover{border-color:#eee}
+  td input:focus,td select:focus,td textarea:focus{outline:none;border-color:#bbb;background:#fff}
+  td.act{white-space:nowrap;text-align:right}
+  .iconbtn{border:none;background:transparent;cursor:pointer;font-size:14px;padding:3px 5px;border-radius:6px;color:#999;line-height:1}
+  .iconbtn:hover{background:#eee;color:#333}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+  /* timeline */
+  .tl-wrap{background:#fff;border:.5px solid var(--line);border-radius:12px;padding:8px}
+  /* 16:9 widescreen PowerPoint slide frame */
+  .slide-frame{
+    position:relative;
+    width:100%;
+    /* 16:9 widescreen ratio (matches one PowerPoint slide) */
+    aspect-ratio:16/9;
+    background:#fff;
+    border:1.5px solid #c7c2b8;
+    border-radius:4px;
+    overflow:hidden;
+    display:flex;
+    align-items:stretch;
+  }
+  .slide-frame svg{
+    width:100%;
+    height:100%;
+    display:block;
+  }
+  .legend{display:flex;gap:18px;align-items:center;margin:10px 6px 2px;font-size:12px;color:#555;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .lg-dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+
+  .hint{font-size:11.5px;color:var(--muted);margin:6px 4px}
+  .col-date{width:120px}.col-status{width:120px}.col-owner{width:130px}.col-phase{width:130px}.col-notes{width:200px}.col-act{width:80px}
+
+  /* color-swatch modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .modal-box{background:#fff;border-radius:14px;padding:24px 28px;box-shadow:0 8px 40px rgba(0,0,0,.18);min-width:320px;max-width:90vw}
+  .modal-box h3{font-size:15px;font-weight:700;margin-bottom:4px}
+  .modal-box p{font-size:12px;color:#888;margin-bottom:16px}
+  .swatch-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+  .swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:.1s}
+  .swatch:hover{transform:scale(1.15);border-color:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.3)}
+  .swatch.selected{border-color:#fff;box-shadow:0 0 0 3px #333}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+  .modal-cancel{font-family:inherit;font-size:13px;padding:7px 16px;border-radius:8px;border:.5px solid var(--line);background:#f3f1ec;cursor:pointer}
+  .modal-confirm{font-family:inherit;font-size:13px;font-weight:700;padding:7px 16px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;cursor:pointer}
+
+  @media print{
+    body{padding:0;background:#fff}
+    .toolbar,.panel,.hint,.subtitle,.legend{display:none!important}
+    .tl-wrap{border:none;padding:0;overflow:visible}
+    h1.title{font-size:18px;margin-bottom:6px}
+    .slide-frame{border:none;aspect-ratio:16/9;width:100%;break-inside:avoid;page-break-inside:avoid}
+    @page{size:landscape;margin:8mm}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="title" id="title" contenteditable="true" spellcheck="false">Project Timeline Collapse Drop Down</h1>
+  <div class="subtitle">แก้ไขข้อมูลในตารางด้านล่าง แล้วไทม์ไลน์จะอัปเดตทันที · คลิกหัวข้อเพื่อแก้ชื่อโครงการ</div>
+
+  <div class="toolbar">
+    <button class="primary" onclick="addRow()">+ เพิ่มรายการ (Add milestone)</button>
+    <button onclick="saveJSON()">💾 บันทึก JSON</button>
+    <button onclick="document.getElementById('loadFile').click()">📂 โหลด JSON</button>
+    <input type="file" id="loadFile" accept="application/json" style="display:none" onchange="loadJSON(event)">
+    <button onclick="resetLayout()">↺ จัดเรียงใหม่ / Reset layout</button>
+    <div class="spacer"></div>
+    <button onclick="exportPNG()">🖼 Export PNG</button>
+    <button onclick="window.print()">🖨 Print / PDF</button>
+  </div>
+
+  <div class="panel" id="editorPanel">
+    <div class="panel-h" onclick="document.getElementById('editorPanel').classList.toggle('collapsed')">
+      <span class="chev">▼</span> ตารางรายการ (Milestone editor)
+    </div>
+    <div class="panel-b">
+      <table>
+        <thead><tr>
+          <th class="col-date">วันที่ / Date</th>
+          <th>รายละเอียด / Description</th>
+          <th class="col-status">สถานะ / Status</th>
+          <th class="col-owner">ผู้รับผิดชอบ / Owner</th>
+          <th class="col-phase">เฟส / Phase</th>
+          <th class="col-notes">หมายเหตุ / Notes</th>
+          <th class="col-act"></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="hint">วันที่รองรับรูปแบบ dd/mm/yyyy (พ.ศ. เช่น 2569 จะถูกแปลงเป็น ค.ศ. อัตโนมัติ) · เว้นว่างได้สำหรับรายการที่ยังไม่กำหนดวัน · ลากลำดับด้วยปุ่ม ▲▼</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span id="statusLegend"></span>
+    <span style="color:#aaa">|</span>
+    <span style="color:#888">เฟส:</span>
+    <span id="phaseLegend"></span>
+  </div>
+
+  <div class="hint" id="dragHint">ลากกล่อง/จุด เพื่อย้าย · ลากพื้นหลังเพื่อเลื่อน · ดับเบิลคลิกพื้นหลังเพื่อรีเซ็ตมุมมอง · (drag boxes/dots to move · drag background to pan · double-click background to reset view)</div>
+  <div class="tl-wrap">
+    <div class="slide-frame" id="slideFrame">
+      <div id="tlScroll" style="width:100%;height:100%;display:flex;align-items:stretch"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Color-swatch modal (hidden by default) -->
+<div class="modal-overlay" id="swatchModal" style="display:none">
+  <div class="modal-box">
+    <h3 id="swatchTitle">เลือกสีสำหรับสถานะใหม่ / Pick a color</h3>
+    <p>คลิกสีที่ต้องการแล้วกด Confirm</p>
+    <div class="swatch-row" id="swatchRow"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="swatchCancel">ยกเลิก / Cancel</button>
+      <button class="modal-confirm" id="swatchConfirm">ยืนยัน / Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- mutable state ----
+let STATUS = {
+  plan:    {label:'Plan date', color:'#9a958c', bg:'#F1EFE8'},
+  done:    {label:'Done',      color:'#3f9142', bg:'#EAF3DE'},
+  delayed: {label:'Delayed',   color:'#cf3b3b', bg:'#FCEBEB'}
+};
+let OWNERS = ['','KING GEN','INNOXPLAN','MTEC-NECTEC'];
+let PHASES = ['Meetings','Procurement','Testing','Reporting','Registration'];
+let PHASE_COLORS = {
+  Meetings:'#5B8DEF', Procurement:'#E0A93B', Testing:'#C0563B',
+  Reporting:'#7B61FF', Registration:'#2E9E8F', '':'#bbb'
+};
+
+// Palette for new phases and new status swatches
+const PALETTE = ['#5B8DEF','#2E9E8F','#E0A93B','#7B61FF','#cf3b3b','#3f9142','#9a958c','#C0563B','#e07b3b','#b35b8f'];
+
+// ---- manual layout overrides (keyed by trimmed desc, same key as groupedData) ----
+// LAYOUT[desc] = { bx, by, dotx, cdx, cdy } — any field absent => use auto value.
+let LAYOUT = {};
+// whole-chart pan/zoom
+let VIEW = { panX:0, panY:0, zoom:1 };
+
+// ---- seed data ----
+let DATA = [
+  {date:'06/04/2026', desc:'Meeting 1', status:'done', owner:'', phase:'Meetings', notes:''},
+  {date:'20/04/2026', desc:'Meeting 2', status:'done', owner:'', phase:'Meetings', notes:''},
+  {date:'26/05/2026', desc:'Quotation', status:'plan', owner:'INNOXPLAN', phase:'Procurement', notes:''},
+  {date:'05/06/2026', desc:'สรุปรุ่นรถที่ใช้ในการจดทะเบียน — Van Series: 5, 5.5, 6 m', status:'plan', owner:'KING GEN', phase:'Procurement', notes:''},
+  {date:'05/06/2026', desc:'Proposal & Budget', status:'plan', owner:'INNOXPLAN', phase:'Procurement', notes:''},
+  {date:'05/06/2026', desc:'PO 1/2 Innoxplan', status:'done', owner:'', phase:'Procurement', notes:''},
+  {date:'08/06/2026', desc:'บริษัท ออก PO จัดจ้าง INNOXPLAN', status:'done', owner:'KING GEN', phase:'Procurement', notes:'08/06/2026, 12/06/2026'},
+  {date:'12/06/2026', desc:'List อุปกรณ์ที่บริษัทเตรียมให้: 1.Motor 2.Motor Controller 3.Van Structure 1 unit', status:'plan', owner:'KING GEN', phase:'Procurement', notes:''},
+  {date:'12/06/2026', desc:'Meeting 3', status:'done', owner:'', phase:'Meetings', notes:''},
+  {date:'', desc:'บริษัท ออก PO จัดจ้าง MTEC', status:'plan', owner:'KING GEN', phase:'Procurement', notes:''},
+  {date:'', desc:'Quotation (MTEC)', status:'plan', owner:'MTEC-NECTEC', phase:'Procurement', notes:''},
+  {date:'', desc:'Test: Ambulance van roof crush — EN 1789, FMVSS 216a; + Motor controller (SQUAT)', status:'plan', owner:'MTEC-NECTEC', phase:'Testing', notes:'Labs: MTEC + NECTEC'},
+  {date:'19/06/2026', desc:'บริษัท ส่งอุปกรณ์การทดสอบให้ MTEC', status:'plan', owner:'KING GEN', phase:'Testing', notes:'เดิมระบุ 19/06/2569 (พ.ศ.)'},
+  {date:'', desc:'แบบคำขอบัญชีนวัตกรรม และรวบรวมเอกสาร เกณฑ์ที่ 1-5', status:'plan', owner:'INNOXPLAN', phase:'Registration', notes:''},
+  {date:'', desc:'Innovation Report — Draft 1', status:'plan', owner:'INNOXPLAN', phase:'Reporting', notes:''},
+  {date:'', desc:'Innovation Report — Draft 2', status:'plan', owner:'INNOXPLAN', phase:'Reporting', notes:''},
+  {date:'', desc:'Innovation Report — Final Report', status:'plan', owner:'INNOXPLAN', phase:'Reporting', notes:''},
+  {date:'', desc:'บริษัท ยื่นแบบคำขอบัญชีนวัตกรรม', status:'plan', owner:'KING GEN', phase:'Registration', notes:''},
+];
+
+// ---- utility ----
+function esc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function parseDate(s){
+  if(!s) return null;
+  const first=String(s).split(/[,–-]/)[0].trim();
+  const m=first.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if(!m) return null;
+  let [_,d,mo,y]=m; y=+y; if(y<100)y+=2000; if(y>2500)y-=543;
+  const dt=new Date(y,+mo-1,+d);
+  return isNaN(dt)?null:dt;
+}
+function formatDate(d){
+  if(!d) return '—';
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+function slugify(label){
+  return label.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||('s'+Date.now());
+}
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return {r,g,b};
+}
+function tintBg(hex){
+  // create a very light tinted background (mix 15% color + 85% white)
+  const {r,g,b}=hexToRgb(hex);
+  const tr=Math.round(r*0.15+255*0.85), tg=Math.round(g*0.15+255*0.85), tb=Math.round(b*0.15+255*0.85);
+  return 'rgb('+tr+','+tg+','+tb+')';
+}
+
+// ---- sorted & grouped data ----
+function sortedData(){
+  return DATA.map((r,i)=>({r,i,d:parseDate(r.date)}))
+    .sort((a,b)=>{
+      if(a.d&&b.d) return a.d-b.d || a.i-b.i;
+      if(a.d&&!b.d) return -1;
+      if(!a.d&&b.d) return 1;
+      return a.i-b.i;
+    }).map(x=>x.r);
+}
+
+function groupedData(){
+  // group by trimmed description (exact match)
+  const groups = []; // ordered by first appearance
+  const map = {};   // desc -> group object
+  DATA.forEach((r,idx)=>{
+    const key = String(r.desc||'').trim();
+    if(!map[key]){
+      const g = {desc:key, entries:[], _firstIdx:idx};
+      map[key] = g;
+      groups.push(g);
+    }
+    map[key].entries.push({
+      date: r.date, status: r.status, owner: r.owner,
+      phase: r.phase, notes: r.notes, _origIdx: idx
+    });
+  });
+
+  groups.forEach(g=>{
+    // sort entries: dated first by ascending date, undated last (keeping insertion order among ties)
+    g.entries.sort((a,b)=>{
+      const da=parseDate(a.date), db=parseDate(b.date);
+      if(da&&db) return da-db;
+      if(da&&!db) return -1;
+      if(!da&&db) return 1;
+      return 0; // both undated: keep original order (stable sort)
+    });
+
+    // sortDate = earliest dated entry
+    const firstDated = g.entries.find(e=>parseDate(e.date));
+    g.sortDate = firstDated ? parseDate(firstDated.date) : null;
+    g.sortDateStr = firstDated ? firstDated.date : '';
+
+    // group-level status = latest entry by date; if no dated entries, last-entered
+    let latestEntry = null;
+    for(let i=g.entries.length-1;i>=0;i--){
+      if(parseDate(g.entries[i].date)){latestEntry=g.entries[i];break;}
+    }
+    if(!latestEntry) latestEntry = g.entries[g.entries.length-1];
+
+    g.status = latestEntry ? latestEntry.status : 'plan';
+
+    // owner/phase from latest entry, falling back to first non-empty
+    g.owner = (latestEntry&&latestEntry.owner) || g.entries.map(e=>e.owner).find(Boolean)||'';
+    g.phase = (latestEntry&&latestEntry.phase) || g.entries.map(e=>e.phase).find(Boolean)||'';
+  });
+
+  // sort groups: groups with sortDate first (ascending), undated groups last (by first appearance)
+  groups.sort((a,b)=>{
+    if(a.sortDate&&b.sortDate) return a.sortDate-b.sortDate || a._firstIdx-b._firstIdx;
+    if(a.sortDate&&!b.sortDate) return -1;
+    if(!a.sortDate&&b.sortDate) return 1;
+    return a._firstIdx-b._firstIdx;
+  });
+
+  return groups;
+}
+
+// ---- editor table ----
+function buildStatusOpts(currentStatus){
+  let html='';
+  Object.keys(STATUS).forEach(k=>{
+    const s=STATUS[k];
+    html+=`<option value="${esc(k)}" ${k===currentStatus?'selected':''} style="color:${esc(s.color)};font-weight:700">${esc(s.label)}</option>`;
+  });
+  html+=`<option value="__add__">➕ เพิ่มใหม่… / Add new…</option>`;
+  return html;
+}
+function buildOwnerOpts(currentOwner){
+  let html='';
+  OWNERS.forEach(o=>{
+    html+=`<option value="${esc(o)}" ${o===currentOwner?'selected':''}>${esc(o)}</option>`;
+  });
+  if(!OWNERS.includes(currentOwner)&&currentOwner!='__add__'){
+    html+=`<option value="${esc(currentOwner)}" selected>${esc(currentOwner)}</option>`;
+  }
+  html+=`<option value="__add__">➕ เพิ่มใหม่… / Add new…</option>`;
+  return html;
+}
+function buildPhaseOpts(currentPhase){
+  let html='';
+  const all=['',...PHASES];
+  all.forEach(p=>{
+    html+=`<option value="${esc(p)}" ${p===currentPhase?'selected':''}>${esc(p)}</option>`;
+  });
+  if(!all.includes(currentPhase)&&currentPhase!='__add__'){
+    html+=`<option value="${esc(currentPhase)}" selected>${esc(currentPhase)}</option>`;
+  }
+  html+=`<option value="__add__">➕ เพิ่มใหม่… / Add new…</option>`;
+  return html;
+}
+
+function renderTable(){
+  const tb=document.getElementById('tbody'); tb.innerHTML='';
+  DATA.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    const st=STATUS[r.status]||STATUS.plan;
+    tr.innerHTML=`
+      <td><input value="${esc(r.date)}" placeholder="dd/mm/yyyy" oninput="upd(${i},'date',this.value)"></td>
+      <td><textarea rows="1" oninput="upd(${i},'desc',this.value);autoG(this)">${esc(r.desc)}</textarea></td>
+      <td><select style="color:${esc(st.color)};font-weight:700"
+            onchange="onStatusChange(${i},this)">${buildStatusOpts(r.status)}</select></td>
+      <td><select onchange="onOwnerChange(${i},this)">${buildOwnerOpts(r.owner)}</select></td>
+      <td><select onchange="onPhaseChange(${i},this)">${buildPhaseOpts(r.phase)}</select></td>
+      <td><textarea rows="1" oninput="upd(${i},'notes',this.value);autoG(this)">${esc(r.notes)}</textarea></td>
+      <td class="act">
+        <button class="iconbtn" title="ขึ้น" onclick="move(${i},-1)">▲</button>
+        <button class="iconbtn" title="ลง" onclick="move(${i},1)">▼</button>
+        <button class="iconbtn" title="ลบ" onclick="del(${i})">✕</button>
+      </td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('textarea').forEach(autoG);
+}
+function autoG(t){t.style.height='auto';t.style.height=t.scrollHeight+'px';}
+
+function upd(i,k,v){DATA[i][k]=v;renderTimeline();}
+function addRow(){DATA.push({date:'',desc:'รายการใหม่',status:'plan',owner:'',phase:'',notes:''});renderTable();renderTimeline();}
+function del(i){DATA.splice(i,1);renderTable();renderTimeline();}
+function move(i,dir){const j=i+dir;if(j<0||j>=DATA.length)return;[DATA[i],DATA[j]]=[DATA[j],DATA[i]];renderTable();renderTimeline();}
+
+// ---- select change handlers ----
+function onStatusChange(i,sel){
+  const v=sel.value;
+  if(v==='__add__'){
+    addOption('status',i,sel);
+    return;
+  }
+  DATA[i].status=v;
+  const st=STATUS[v]||STATUS.plan;
+  sel.style.color=st.color;
+  renderTimeline();
+}
+function onOwnerChange(i,sel){
+  const v=sel.value;
+  if(v==='__add__'){addOption('owner',i,sel);return;}
+  DATA[i].owner=v;
+  renderTimeline();
+}
+function onPhaseChange(i,sel){
+  const v=sel.value;
+  if(v==='__add__'){addOption('phase',i,sel);return;}
+  DATA[i].phase=v;
+  renderTimeline();
+}
+
+// ---- addOption ----
+function addOption(kind,i,sel){
+  if(kind==='owner'){
+    const name=(prompt('ชื่อผู้รับผิดชอบใหม่ / New owner name:')||'').trim();
+    if(!name){renderTable();renderTimeline();return;}
+    if(!OWNERS.includes(name)) OWNERS.push(name);
+    DATA[i].owner=name;
+    renderTable();renderTimeline();
+  } else if(kind==='phase'){
+    const name=(prompt('ชื่อเฟสใหม่ / New phase name:')||'').trim();
+    if(!name){renderTable();renderTimeline();return;}
+    if(!PHASES.includes(name)){
+      PHASES.push(name);
+      // pick next unused color from palette
+      const usedColors=Object.values(PHASE_COLORS);
+      const next=PALETTE.find(c=>!usedColors.includes(c))||'#bbb';
+      PHASE_COLORS[name]=next;
+    }
+    DATA[i].phase=name;
+    renderTable();renderTimeline();
+  } else if(kind==='status'){
+    const label=(prompt('ชื่อสถานะใหม่ / New status label:')||'').trim();
+    if(!label){renderTable();renderTimeline();return;}
+    // show color picker modal
+    showSwatchModal(label,i);
+  }
+}
+
+// ---- swatch modal ----
+const SWATCH_COLORS=['#5B8DEF','#2E9E8F','#E0A93B','#7B61FF','#cf3b3b','#3f9142','#9a958c'];
+let _swatchSelected=null;
+let _swatchLabel='';
+let _swatchRowIdx=-1;
+
+function showSwatchModal(label,rowIdx){
+  _swatchLabel=label; _swatchRowIdx=rowIdx; _swatchSelected=null;
+  const row=document.getElementById('swatchRow');
+  row.innerHTML='';
+  SWATCH_COLORS.forEach(c=>{
+    const div=document.createElement('div');
+    div.className='swatch';
+    div.style.background=c;
+    div.title=c;
+    div.onclick=()=>{
+      _swatchSelected=c;
+      row.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+      div.classList.add('selected');
+    };
+    row.appendChild(div);
+  });
+  document.getElementById('swatchTitle').textContent='เลือกสีสำหรับ "'+label+'"';
+  document.getElementById('swatchModal').style.display='flex';
+}
+
+document.getElementById('swatchCancel').onclick=function(){
+  document.getElementById('swatchModal').style.display='none';
+  _swatchSelected=null; _swatchLabel=''; _swatchRowIdx=-1;
+  renderTable(); renderTimeline();
+};
+document.getElementById('swatchConfirm').onclick=function(){
+  if(!_swatchSelected){alert('กรุณาเลือกสี / Please pick a color');return;}
+  const color=_swatchSelected;
+  const bg=tintBg(color);
+  const key=slugify(_swatchLabel);
+  const uniqueKey=STATUS[key]?key+'_'+Date.now():key;
+  STATUS[uniqueKey]={label:_swatchLabel, color:color, bg:bg};
+  DATA[_swatchRowIdx].status=uniqueKey;
+  document.getElementById('swatchModal').style.display='none';
+  _swatchSelected=null; _swatchLabel=''; _swatchRowIdx=-1;
+  renderTable(); renderTimeline();
+};
+
+// ---- lines / wrapText helpers ----
+function lines(text,maxW,fs){
+  const words=String(text||'').split(/\s+/), out=[]; let cur='';
+  const cw=fs*0.56; const max=Math.max(6,Math.floor(maxW/cw));
+  words.forEach(w=>{
+    let t=cur?cur+' '+w:w;
+    while(t.length>max){
+      if(cur){out.push(cur);cur='';t=w;}
+      if(w.length>max){out.push(w.slice(0,max));w=w.slice(max);t=w;}else break;
+    }
+    if(t.length<=max)cur=t; else {if(cur)out.push(cur);cur=w;}
+  });
+  if(cur)out.push(cur);
+  return out.length?out:[''];
+}
+function wrapText(svg,NS,text,x,y,maxW,lh,fill,weight,fs){
+  const ls=lines(text,maxW,fs);
+  ls.forEach((ln,i)=>{
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',x); t.setAttribute('y',y+i*lh);
+    t.setAttribute('font-size',fs); t.setAttribute('fill',fill);
+    t.setAttribute('font-weight',weight);
+    t.setAttribute('font-family','Segoe UI,Sarabun,sans-serif');
+    t.textContent=ln; svg.appendChild(t);
+  });
+  return ls;
+}
+
+// ---- heightFor (group-aware) ----
+function heightFor(g){
+  // g may be a group object (with .entries) or a plain row
+  const boxW=190-48; // same width estimate as original (COLW-26 - 14 - 14 = COLW-52, but keep compat)
+  let h=18;
+  const owner=g.owner||'';
+  const desc=g.desc||(g.r&&g.r.desc)||'';
+  if(owner) h+=17;
+  h+=lines(desc,boxW,13).length*18;
+  // entries (group) or single-row notes
+  if(g.entries){
+    g.entries.forEach(e=>{
+      h+=20; // one line: date + status label
+      if(e.notes) h+=2+lines(e.notes,boxW,11).length*14;
+    });
+  } else {
+    if(g.notes||g.r&&g.r.notes){
+      const notes=g.notes||(g.r&&g.r.notes)||'';
+      if(notes) h+=2+lines(notes,boxW,11).length*14;
+    }
+  }
+  return Math.max(48,h+14);
+}
+
+// ---- date label color by status (Plan = BLACK, not gray) ----
+function dateColor(statusKey){
+  if(statusKey==='done') return '#3f9142';
+  if(statusKey==='delayed') return '#cf3b3b';
+  if(statusKey==='plan') return '#1a1a1a';
+  // custom statuses: use their defined color
+  const s=STATUS[statusKey];
+  return (s&&s.color)||'#1a1a1a';
+}
+
+// ---- multi-level interval packing ----
+// Place a box [x0,x1] on the lowest free level for its side. Levels track
+// occupied x-intervals; if every existing level overlaps, open a new one.
+function packLevel(levels,x0,x1,gap){
+  const lo=x0-gap, hi=x1+gap;
+  for(let lvl=0;lvl<levels.length;lvl++){
+    let conflict=false;
+    for(const iv of levels[lvl]){
+      if(lo < iv.hi && hi > iv.lo){conflict=true;break;}
+    }
+    if(!conflict){
+      levels[lvl].push({lo,hi});
+      return lvl;
+    }
+  }
+  // open a new level
+  levels.push([{lo,hi}]);
+  return levels.length-1;
+}
+
+// ---- timeline (SVG, grouped, multi-level staggered) ----
+const NS='http://www.w3.org/2000/svg';
+function renderTimeline(){
+  const groups=groupedData();
+  const n=groups.length;
+  const COLW=190, padX=70;
+  const W=padX*2+Math.max(1,n-1)*COLW+(n===1?COLW:0);
+  const boxW=COLW-26;
+  const axisGap=40;     // gap from axis to first box level
+  const levelGap=14;    // vertical gap between stacked levels
+  const dateBand=26;    // room reserved near axis for the date label
+  const sideGap=10;     // horizontal gap used by interval packing
+
+  // ---- 1st pass: assign side + level + compute box heights ----
+  const aboveLevels=[]; // each level = array of {lo,hi}
+  const belowLevels=[];
+  const placed=groups.map((g,k)=>{
+    const x=padX+(n===1?COLW/2:k*COLW);
+    let boxX=x-boxW/2;
+    // clamp horizontally inside [0,W]
+    if(boxX<2) boxX=2;
+    if(boxX+boxW>W-2) boxX=W-2-boxW;
+    const boxH=heightFor(g);
+    const above=k%2===0;
+    const lvl=above? packLevel(aboveLevels,boxX,boxX+boxW,sideGap)
+                   : packLevel(belowLevels,boxX,boxX+boxW,sideGap);
+    return {g,x,boxX,boxH,above,lvl};
+  });
+
+  // ---- compute vertical extents from deepest level used on each side ----
+  // baseTop = top of level-0 box on the above side
+  // For each above box: boxBottom = axisY - axisGap - dateBand - lvl*levelGap ... but
+  // we need a fixed level baseline. Use cumulative max box height per level band.
+  function bandHeights(placedSide){
+    // for each level, the max box height present on that level
+    const maxH={};
+    placedSide.forEach(p=>{ maxH[p.lvl]=Math.max(maxH[p.lvl]||0,p.boxH); });
+    return maxH;
+  }
+  const aboveArr=placed.filter(p=>p.above);
+  const belowArr=placed.filter(p=>!p.above);
+  const aboveBands=bandHeights(aboveArr);
+  const belowBands=bandHeights(belowArr);
+  // cumulative offset (distance from axis to TOP of a given above-level / to TOP of a below-level box)
+  function cumOffsets(bands,levelCount){
+    // offsets[lvl] = distance from the inner edge (axis side) to the box's near edge
+    const off=[]; let acc=axisGap+dateBand;
+    for(let l=0;l<levelCount;l++){
+      off[l]=acc;
+      acc+= (bands[l]||0) + levelGap;
+    }
+    return {off, total:acc};
+  }
+  const aboveCum=cumOffsets(aboveBands,aboveLevels.length);
+  const belowCum=cumOffsets(belowBands,belowLevels.length);
+
+  const topH=Math.max(120,aboveCum.total)+20;
+  const botH=Math.max(120,belowCum.total)+20;
+  const axisY=topH;
+  const H=topH+botH;
+
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('xmlns',NS);
+  svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+  svg.style.background='#fff';
+  svg.style.touchAction='none'; // let pointer events drive pan/drag
+
+  // single viewport <g> for pan/zoom of the whole chart
+  const viewport=document.createElementNS(NS,'g');
+  viewport.setAttribute('id','viewport');
+  viewport.setAttribute('transform',`translate(${VIEW.panX},${VIEW.panY}) scale(${VIEW.zoom})`);
+  svg.appendChild(viewport);
+
+  // transparent background catcher for pan / dblclick reset (covers whole chart)
+  const bg=document.createElementNS(NS,'rect');
+  bg.setAttribute('id','tlBg');
+  bg.setAttribute('x',-4000); bg.setAttribute('y',-4000);
+  bg.setAttribute('width',W+8000); bg.setAttribute('height',H+8000);
+  bg.setAttribute('fill','transparent');
+  viewport.appendChild(bg);
+
+  // axis line
+  const ax=document.createElementNS(NS,'line');
+  ax.setAttribute('x1',padX-30); ax.setAttribute('x2',W-padX+30);
+  ax.setAttribute('y1',axisY); ax.setAttribute('y2',axisY);
+  ax.setAttribute('stroke','#c7c2b8'); ax.setAttribute('stroke-width',3);
+  ax.setAttribute('stroke-linecap','round');
+  viewport.appendChild(ax);
+
+  // axis x-range for clamping dragged dots
+  const axisMinX=padX-20, axisMaxX=W-padX+20;
+
+  placed.forEach(p=>{
+    const {g,boxH,above,lvl}=p;
+    const desc=g.desc;
+    const ov=LAYOUT[desc]||{};
+    const st=STATUS[g.status]||STATUS.plan;
+    // group date label color = group's EARLIEST entry's status color
+    const earliestStatus=(g.entries&&g.entries.length)?g.entries[0].status:g.status;
+
+    // dot x: manual override or auto
+    const dotx=(ov.dotx!=null)?ov.dotx:p.x;
+
+    // auto box position: above boxes grow upward; below boxes grow downward
+    let autoBoxX=p.boxX, autoBoxY, connY;
+    if(above){
+      const off=aboveCum.off[lvl]; // distance axis→box BOTTOM edge
+      const boxBottom=axisY-off;
+      autoBoxY=boxBottom-boxH;
+    } else {
+      const off=belowCum.off[lvl]; // distance axis→box TOP edge
+      autoBoxY=axisY+off;
+    }
+    // apply manual box override
+    const boxX=(ov.bx!=null)?ov.bx:autoBoxX;
+    const boxY=(ov.by!=null)?ov.by:autoBoxY;
+
+    // group <g> wrapper for this milestone box (draggable as a unit)
+    const gb=document.createElementNS(NS,'g');
+    gb.setAttribute('class','tl-box');
+    gb.setAttribute('data-desc',desc);
+    gb.style.cursor='move';
+
+    // ---- connector + dot + date live OUTSIDE the box <g> (anchored to axis) ----
+    // connector (dotted, status colored). Attach point on box = nearest edge to dot,
+    // or manual offset (cdx,cdy) added to box top-left.
+    const att=connectorAttach(boxX,boxY,boxW,boxH,dotx,axisY,ov);
+    const ln=document.createElementNS(NS,'line');
+    ln.setAttribute('class','tl-conn'); ln.setAttribute('data-desc',desc);
+    ln.setAttribute('x1',dotx); ln.setAttribute('y1',axisY);
+    ln.setAttribute('x2',att.x); ln.setAttribute('y2',att.y);
+    ln.setAttribute('stroke',st.color); ln.setAttribute('stroke-width',1.5);
+    ln.setAttribute('stroke-dasharray','3,3');
+    viewport.appendChild(ln);
+
+    // connector handle (small draggable circle at box-attach end)
+    const handle=document.createElementNS(NS,'circle');
+    handle.setAttribute('class','tl-handle'); handle.setAttribute('data-desc',desc);
+    handle.setAttribute('cx',att.x); handle.setAttribute('cy',att.y); handle.setAttribute('r',4);
+    handle.setAttribute('fill','#fff'); handle.setAttribute('stroke',st.color);
+    handle.setAttribute('stroke-width',1.5); handle.style.cursor='crosshair';
+    viewport.appendChild(handle);
+
+    // dot (draggable along axis)
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('class','tl-dot'); c.setAttribute('data-desc',desc);
+    c.setAttribute('cx',dotx); c.setAttribute('cy',axisY); c.setAttribute('r',8);
+    c.setAttribute('fill',st.color); c.setAttribute('stroke','#fff');
+    c.setAttribute('stroke-width',2.5); c.style.cursor='ew-resize';
+    viewport.appendChild(c);
+
+    // date label near axis (earliest date of group, colored by earliest entry's status)
+    const dlEl=document.createElementNS(NS,'text');
+    dlEl.setAttribute('class','tl-date'); dlEl.setAttribute('data-desc',desc);
+    dlEl.setAttribute('x',dotx); dlEl.setAttribute('y',above?axisY+20:axisY-12);
+    dlEl.setAttribute('text-anchor','middle'); dlEl.setAttribute('font-size','12');
+    dlEl.setAttribute('font-weight','700'); dlEl.setAttribute('fill',dateColor(earliestStatus));
+    dlEl.setAttribute('font-family','Segoe UI,Sarabun,sans-serif');
+    dlEl.textContent=g.sortDateStr||'—';
+    viewport.appendChild(dlEl);
+
+    // ---- box content (built at boxX,boxY) ----
+    const ph=PHASE_COLORS[g.phase]||'#bbb';
+    const rect=document.createElementNS(NS,'rect');
+    rect.setAttribute('x',boxX); rect.setAttribute('y',boxY);
+    rect.setAttribute('width',boxW); rect.setAttribute('height',boxH);
+    rect.setAttribute('rx',9); rect.setAttribute('fill',st.bg);
+    rect.setAttribute('stroke',st.color); rect.setAttribute('stroke-width',1.3);
+    gb.appendChild(rect);
+    // phase color strip
+    const strip=document.createElementNS(NS,'rect');
+    strip.setAttribute('x',boxX); strip.setAttribute('y',boxY);
+    strip.setAttribute('width',5); strip.setAttribute('height',boxH);
+    strip.setAttribute('rx',2.5); strip.setAttribute('fill',ph);
+    gb.appendChild(strip);
+
+    let ty=boxY+20;
+    // owner tag
+    if(g.owner){
+      const og=document.createElementNS(NS,'text');
+      og.setAttribute('x',boxX+14); og.setAttribute('y',ty);
+      og.setAttribute('font-size','10.5'); og.setAttribute('font-weight','800');
+      og.setAttribute('fill',ph); og.setAttribute('letter-spacing','.3');
+      og.setAttribute('font-family','Segoe UI,Sarabun,sans-serif');
+      og.textContent=g.owner.toUpperCase();
+      gb.appendChild(og); ty+=17;
+    }
+    // description (wrapped, once)
+    const descLines=wrapText(gb,NS,g.desc,boxX+14,ty,boxW-22,15,'#1a1a1a',600,13);
+    ty+=descLines.length*18;
+
+    // entries: one colored line per entry (date colored by entry's own status) + notes
+    const innerW=boxW-22;
+    g.entries.forEach(e=>{
+      const est=STATUS[e.status]||STATUS.plan;
+      const entryStr=(e.date?e.date:'—')+'  '+est.label;
+      const etEl=document.createElementNS(NS,'text');
+      etEl.setAttribute('x',boxX+14); etEl.setAttribute('y',ty+12);
+      etEl.setAttribute('font-size','11.5'); etEl.setAttribute('fill',dateColor(e.status));
+      etEl.setAttribute('font-weight','700');
+      etEl.setAttribute('font-family','Segoe UI,Sarabun,sans-serif');
+      etEl.textContent=entryStr;
+      gb.appendChild(etEl); ty+=20;
+      if(e.notes){
+        ty+=2;
+        const noteLines=wrapText(gb,NS,e.notes,boxX+14,ty,innerW,14,'#888',400,11);
+        ty+=noteLines.length*14;
+      }
+    });
+
+    viewport.appendChild(gb);
+
+    // remember geometry for live drag updates (in content coords)
+    gb._geo={boxX,boxY,boxW,boxH,dotx,axisY,desc};
+  });
+
+  const holder=document.getElementById('tlScroll');
+  holder.innerHTML=''; holder.appendChild(svg);
+  window._lastSVG=svg; window._svgDims={W,H};
+  window._tlState={axisY,axisMinX,axisMaxX,boxW,W,H};
+  attachDragHandlers(svg);
+  renderPhaseLegend();
+  renderStatusLegend();
+}
+
+// connector attach point on the box: manual offset (cdx,cdy) from box top-left,
+// else the box edge nearest the dot.
+function connectorAttach(boxX,boxY,boxW,boxH,dotx,axisY,ov){
+  if(ov && ov.cdx!=null && ov.cdy!=null){
+    return {x:boxX+ov.cdx, y:boxY+ov.cdy};
+  }
+  // nearest edge: clamp dot x to box x-range for the horizontal attach,
+  // attach to the box's near vertical edge (bottom if box above axis, top if below)
+  const cx=Math.max(boxX, Math.min(dotx, boxX+boxW));
+  const cy=(boxY+boxH/2 < axisY) ? boxY+boxH : boxY; // bottom edge if above, top edge if below
+  return {x:cx, y:cy};
+}
+
+function renderPhaseLegend(){
+  const used=[...new Set(DATA.map(r=>r.phase).filter(Boolean))];
+  document.getElementById('phaseLegend').innerHTML=used.map(p=>
+    `<span style="margin-right:12px"><i class="lg-dot" style="background:${PHASE_COLORS[p]||'#bbb'}"></i>${esc(p)}</span>`
+  ).join('');
+}
+function renderStatusLegend(){
+  const el=document.getElementById('statusLegend');
+  if(!el) return;
+  el.innerHTML=Object.keys(STATUS).map(k=>{
+    const s=STATUS[k];
+    return `<span style="margin-right:12px"><i class="lg-dot" style="background:${esc(s.color)}"></i>${esc(s.label)}</span>`;
+  }).join('');
+}
+
+// ---- pointer -> content coordinates ----
+// Map a pointer event to SVG user units, then undo the viewport (pan/zoom) transform.
+function eventToContent(svg,e){
+  const p=svg.createSVGPoint();
+  p.x=e.clientX; p.y=e.clientY;
+  const ctm=svg.getScreenCTM();
+  if(!ctm) return {x:0,y:0};
+  const u=p.matrixTransform(ctm.inverse()); // SVG user units (viewBox space)
+  // subtract viewport transform: content = (user - pan) / zoom
+  return { x:(u.x-VIEW.panX)/VIEW.zoom, y:(u.y-VIEW.panY)/VIEW.zoom };
+}
+
+// ---- drag interactivity (boxes, dots, connector handles, pan, wheel-zoom) ----
+let _drag=null; // {kind, desc, grabDX, grabDY, geo, ...}
+
+function attachDragHandlers(svg){
+  const tlState=window._tlState;
+
+  function findBoxGroup(target){
+    let el=target;
+    while(el && el!==svg){
+      if(el.classList && el.classList.contains('tl-box')) return el;
+      el=el.parentNode;
+    }
+    return null;
+  }
+
+  svg.addEventListener('pointerdown',e=>{
+    const t=e.target;
+    const cls=t.classList;
+    const content=eventToContent(svg,e);
+
+    // 1) dot drag
+    if(cls && cls.contains('tl-dot')){
+      const desc=t.getAttribute('data-desc');
+      _drag={kind:'dot',desc,el:t};
+      svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    // 2) connector handle drag
+    if(cls && cls.contains('tl-handle')){
+      const desc=t.getAttribute('data-desc');
+      const gb=[...svg.querySelectorAll('.tl-box')].find(b=>b.getAttribute('data-desc')===desc);
+      const geo=gb&&gb._geo;
+      _drag={kind:'handle',desc,el:t,geo,
+        grabDX:content.x-parseFloat(t.getAttribute('cx')),
+        grabDY:content.y-parseFloat(t.getAttribute('cy'))};
+      svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    // 3) box drag
+    const gb=findBoxGroup(t);
+    if(gb){
+      const geo=gb._geo;
+      _drag={kind:'box',desc:gb.getAttribute('data-desc'),el:gb,geo,
+        grabDX:content.x-geo.boxX, grabDY:content.y-geo.boxY};
+      svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    // 4) pan (empty background)
+    _drag={kind:'pan',startX:e.clientX,startY:e.clientY,panX0:VIEW.panX,panY0:VIEW.panY};
+    svg.setPointerCapture(e.pointerId);
+  });
+
+  svg.addEventListener('pointermove',e=>{
+    if(!_drag) return;
+    if(_drag.kind==='pan'){
+      // pan in user units: screen delta scaled by viewBox/screen ratio
+      const ctm=svg.getScreenCTM(); if(!ctm) return;
+      const sx=ctm.a||1, sy=ctm.d||1; // screen px per user unit
+      VIEW.panX=_drag.panX0+(e.clientX-_drag.startX)/sx;
+      VIEW.panY=_drag.panY0+(e.clientY-_drag.startY)/sy;
+      const vp=svg.querySelector('#viewport');
+      if(vp) vp.setAttribute('transform',`translate(${VIEW.panX},${VIEW.panY}) scale(${VIEW.zoom})`);
+      return;
+    }
+    const content=eventToContent(svg,e);
+
+    if(_drag.kind==='dot'){
+      let nx=content.x;
+      nx=Math.max(tlState.axisMinX,Math.min(nx,tlState.axisMaxX));
+      LAYOUT[_drag.desc]=LAYOUT[_drag.desc]||{};
+      LAYOUT[_drag.desc].dotx=nx;
+      liveUpdateDot(svg,_drag.desc,nx);
+      return;
+    }
+    if(_drag.kind==='handle'){
+      const geo=_drag.geo; if(!geo) return;
+      const ax=content.x-_drag.grabDX, ay=content.y-_drag.grabDY;
+      LAYOUT[_drag.desc]=LAYOUT[_drag.desc]||{};
+      LAYOUT[_drag.desc].cdx=ax-geo.boxX;
+      LAYOUT[_drag.desc].cdy=ay-geo.boxY;
+      liveUpdateConnector(svg,_drag.desc);
+      return;
+    }
+    if(_drag.kind==='box'){
+      const nx=content.x-_drag.grabDX, ny=content.y-_drag.grabDY;
+      LAYOUT[_drag.desc]=LAYOUT[_drag.desc]||{};
+      LAYOUT[_drag.desc].bx=nx;
+      LAYOUT[_drag.desc].by=ny;
+      liveUpdateBox(svg,_drag.desc,nx,ny);
+      return;
+    }
+  });
+
+  svg.addEventListener('pointerup',e=>{
+    if(_drag){ try{svg.releasePointerCapture(e.pointerId);}catch(_){} }
+    _drag=null;
+  });
+  svg.addEventListener('pointercancel',()=>{_drag=null;});
+
+  // double-click empty background => reset VIEW only
+  svg.addEventListener('dblclick',e=>{
+    if(e.target.id==='tlBg'){
+      VIEW={panX:0,panY:0,zoom:1};
+      const vp=svg.querySelector('#viewport');
+      if(vp) vp.setAttribute('transform','translate(0,0) scale(1)');
+    }
+  });
+
+  // wheel zoom toward cursor (clamp 0.4–3)
+  svg.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const u=(function(){
+      const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY;
+      const ctm=svg.getScreenCTM(); if(!ctm) return null;
+      return p.matrixTransform(ctm.inverse());
+    })();
+    if(!u) return;
+    const old=VIEW.zoom;
+    let nz=old*(e.deltaY<0?1.1:1/1.1);
+    nz=Math.max(0.4,Math.min(3,nz));
+    // keep the point under cursor fixed: pan' = u - (u - pan)*nz/old
+    VIEW.panX=u.x-(u.x-VIEW.panX)*nz/old;
+    VIEW.panY=u.y-(u.y-VIEW.panY)*nz/old;
+    VIEW.zoom=nz;
+    const vp=svg.querySelector('#viewport');
+    if(vp) vp.setAttribute('transform',`translate(${VIEW.panX},${VIEW.panY}) scale(${VIEW.zoom})`);
+  },{passive:false});
+}
+
+// ---- live element updates during drag (avoid full re-render) ----
+function liveUpdateBox(svg,desc,nx,ny){
+  const gb=[...svg.querySelectorAll('.tl-box')].find(b=>b.getAttribute('data-desc')===desc);
+  if(!gb) return;
+  const geo=gb._geo;
+  const dx=nx-geo.boxX, dy=ny-geo.boxY;
+  gb.setAttribute('transform',`translate(${dx},${dy})`);
+  // update stored absolute geo for connector math
+  gb._liveBox={boxX:nx,boxY:ny};
+  liveUpdateConnector(svg,desc);
+}
+function liveUpdateDot(svg,desc,nx){
+  const dot=[...svg.querySelectorAll('.tl-dot')].find(b=>b.getAttribute('data-desc')===desc);
+  const date=[...svg.querySelectorAll('.tl-date')].find(b=>b.getAttribute('data-desc')===desc);
+  if(dot) dot.setAttribute('cx',nx);
+  if(date) date.setAttribute('x',nx);
+  liveUpdateConnector(svg,desc);
+}
+function liveUpdateConnector(svg,desc){
+  const gb=[...svg.querySelectorAll('.tl-box')].find(b=>b.getAttribute('data-desc')===desc);
+  const ln=[...svg.querySelectorAll('.tl-conn')].find(b=>b.getAttribute('data-desc')===desc);
+  const handle=[...svg.querySelectorAll('.tl-handle')].find(b=>b.getAttribute('data-desc')===desc);
+  const dot=[...svg.querySelectorAll('.tl-dot')].find(b=>b.getAttribute('data-desc')===desc);
+  if(!gb||!ln) return;
+  const geo=gb._geo;
+  const lb=gb._liveBox||{boxX:geo.boxX,boxY:geo.boxY};
+  const dotx=dot?parseFloat(dot.getAttribute('cx')):geo.dotx;
+  const att=connectorAttach(lb.boxX,lb.boxY,geo.boxW,geo.boxH,dotx,geo.axisY,LAYOUT[desc]||{});
+  ln.setAttribute('x1',dotx); ln.setAttribute('y1',geo.axisY);
+  ln.setAttribute('x2',att.x); ln.setAttribute('y2',att.y);
+  if(handle){ handle.setAttribute('cx',att.x); handle.setAttribute('cy',att.y); }
+}
+
+// ---- reset layout ----
+function resetLayout(){
+  LAYOUT={};
+  VIEW={panX:0,panY:0,zoom:1};
+  renderTimeline();
+}
+
+// ---- save/load (extended shape) ----
+function saveJSON(){
+  const payload={
+    title: document.getElementById('title').textContent,
+    milestones: DATA,
+    owners: OWNERS,
+    phases: PHASES,
+    statuses: STATUS,
+    phaseColors: PHASE_COLORS,
+    layout: LAYOUT,
+    view: VIEW
+  };
+  dl(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),'project_timeline.json');
+}
+function loadJSON(e){
+  const f=e.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{try{
+    const j=JSON.parse(rd.result);
+    // accept bare array (legacy), {title,milestones} (old), or new full shape
+    if(Array.isArray(j)){
+      DATA=j;
+      // legacy files have no layout/view; reset to defaults
+      LAYOUT={}; VIEW={panX:0,panY:0,zoom:1};
+    } else {
+      if(j.title) document.getElementById('title').textContent=j.title;
+      DATA=j.milestones||[];
+      // restore manual layout overrides + pan/zoom (default when absent)
+      LAYOUT=(j.layout&&typeof j.layout==='object')?j.layout:{};
+      VIEW=(j.view&&typeof j.view==='object')
+        ?{panX:+j.view.panX||0,panY:+j.view.panY||0,zoom:+j.view.zoom||1}
+        :{panX:0,panY:0,zoom:1};
+      // merge owners
+      if(Array.isArray(j.owners)){
+        j.owners.forEach(o=>{if(!OWNERS.includes(o))OWNERS.push(o);});
+      }
+      // merge phases + colors
+      if(Array.isArray(j.phases)){
+        j.phases.forEach(p=>{
+          if(!PHASES.includes(p)&&p){
+            PHASES.push(p);
+            if(!PHASE_COLORS[p]){
+              const usedColors=Object.values(PHASE_COLORS);
+              PHASE_COLORS[p]=PALETTE.find(c=>!usedColors.includes(c))||'#bbb';
+            }
+          }
+        });
+      }
+      if(j.phaseColors&&typeof j.phaseColors==='object'){
+        Object.assign(PHASE_COLORS,j.phaseColors);
+      }
+      // merge statuses
+      if(j.statuses&&typeof j.statuses==='object'){
+        Object.assign(STATUS,j.statuses);
+      }
+    }
+    renderTable(); renderTimeline();
+  }catch(err){alert('ไฟล์ไม่ถูกต้อง: '+err.message);}};
+  rd.readAsText(f); e.target.value='';
+}
+
+// ---- export PNG (16:9 PowerPoint slide: 1920x1080) ----
+function exportPNG(){
+  const svgEl=window._lastSVG; if(!svgEl)return;
+  const {W,H}=window._svgDims;
+  // 16:9 widescreen slide
+  const SW=1920, SH=1080;
+  // Scale to fit inside the slide preserving aspect ratio
+  const scale=Math.min(SW/W,SH/H);
+  const outW=SW, outH=SH;
+  const drawW=W*scale, drawH=H*scale;
+  const offX=(SW-drawW)/2, offY=(SH-drawH)/2;
+
+  const clone=svgEl.cloneNode(true);
+  // render at native SVG dims, then canvas-scale
+  const data=new XMLSerializer().serializeToString(clone);
+  const img=new Image();
+  const blob=new Blob([data],{type:'image/svg+xml;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  img.onload=()=>{
+    const cv=document.createElement('canvas');
+    cv.width=outW; cv.height=outH;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.drawImage(img,offX,offY,drawW,drawH);
+    URL.revokeObjectURL(url);
+    cv.toBlob(b=>dl(b,'project_timeline_slide_16x9.png'));
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);alert('Export PNG ไม่สำเร็จ');};
+  img.src=url;
+}
+function dl(blob,name){
+  const u=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
+}
+
+// ---- init ----
+renderTable();
+renderTimeline();
+</script>
+</body>
+</html>
