@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Use — Project Timeline Tool</title>
+<style>
+  :root{
+    --bg:#f8f7f4; --card:#fff; --line:#e0ddd6; --ink:#1a1a1a; --muted:#777;
+    --done:#3f9142; --plan:#9a958c; --delay:#cf3b3b; --accent:#1a1a1a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;padding:2rem}
+  .wrap{max-width:880px;margin:0 auto;background:var(--card);border:.5px solid var(--line);border-radius:14px;padding:2.4rem 2.6rem;box-shadow:0 2px 24px rgba(0,0,0,.04)}
+  header{border-bottom:2px solid var(--line);padding-bottom:1rem;margin-bottom:1.4rem}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13.5px;margin-top:4px}
+  h2{font-size:18px;font-weight:700;margin:1.8rem 0 .6rem;padding-top:.4rem;border-top:1px solid #efece6;display:flex;align-items:center;gap:9px}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;flex:none}
+  h3{font-size:14.5px;font-weight:700;margin:1rem 0 .3rem}
+  p{font-size:14px;margin:.35rem 0}
+  ul,ol{margin:.4rem 0 .4rem 1.3rem;font-size:14px}
+  li{margin:.28rem 0}
+  code,kbd{font-family:'SF Mono',Consolas,monospace;font-size:12.5px;background:#f1efe9;border:.5px solid var(--line);border-radius:5px;padding:1px 6px}
+  .btn{display:inline-block;font-size:12.5px;font-weight:600;background:#fff;border:.5px solid var(--line);border-radius:7px;padding:2px 9px;white-space:nowrap}
+  .btn.dark{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+  .tip{background:#EAF3DE;border-left:4px solid var(--done);border-radius:6px;padding:.7rem .9rem;font-size:13.5px;margin:.7rem 0}
+  .warn{background:#FCEBEB;border-left:4px solid var(--delay);border-radius:6px;padding:.7rem .9rem;font-size:13.5px;margin:.7rem 0}
+  .note{background:#F1EFE8;border-left:4px solid var(--plan);border-radius:6px;padding:.7rem .9rem;font-size:13.5px;margin:.7rem 0}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:.6rem 0}
+  th,td{border:.5px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th{background:#f3f1ec;font-weight:700}
+  .pill{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:middle;margin-right:5px}
+  .lead{font-size:14.5px;color:#333;margin-bottom:.4rem}
+  .toc{background:#faf9f6;border:.5px solid var(--line);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem;font-size:13.5px}
+  .toc b{display:block;margin-bottom:.4rem;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#666}
+  .toc ol{columns:2;margin-left:1.1rem}
+  footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #efece6;font-size:12px;color:var(--muted)}
+  @media print{
+    body{background:#fff;padding:0;font-size:12.5px}
+    .wrap{border:none;box-shadow:none;border-radius:0;max-width:100%;padding:0 .2rem}
+    h2{break-after:avoid;page-break-after:avoid}
+    .tip,.warn,.note,table{break-inside:avoid;page-break-inside:avoid}
+    @page{margin:14mm}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Project Timeline Tool — How to Use</h1>
+    <div class="sub">A guide to the <em>Project Timeline Collapse Drop Down</em> tool · Thai Smile Bus / EMMA project</div>
+  </header>
+
+  <p class="lead">This tool turns a simple list of milestones into a clean, presentation-ready timeline that you can edit live during meetings, then export to a PowerPoint slide or PDF. It is one self-contained file — no installation, works offline, opens in any browser.</p>
+
+  <div class="toc">
+    <b>Contents</b>
+    <ol>
+      <li>Opening the tool</li>
+      <li>The milestone table</li>
+      <li>Adding new dropdown values</li>
+      <li>Grouping (same description)</li>
+      <li>Company logos</li>
+      <li>Fitting one page (Rows)</li>
+      <li>Moving things (drag)</li>
+      <li>Saving &amp; reloading</li>
+      <li>Export PNG</li>
+      <li>Print / PDF</li>
+      <li>Sharing via GitHub</li>
+      <li>Troubleshooting</li>
+    </ol>
+  </div>
+
+  <h2><span class="num">1</span> Opening the tool</h2>
+  <ul>
+    <li>Double-click <code>project timeline collapse drop down.html</code> — it opens in your web browser (Chrome or Edge recommended).</li>
+    <li>The top half is the <b>editor</b> (a table you type into). The bottom half is the <b>timeline</b>, which redraws instantly every time you change something.</li>
+    <li>Click the big title at the top to rename the project.</li>
+  </ul>
+
+  <h2><span class="num">2</span> The milestone table</h2>
+  <p>Each row is one update. The columns are:</p>
+  <table>
+    <tr><th>Column</th><th>What to put</th></tr>
+    <tr><td><b>Date</b></td><td><code>dd/mm/yyyy</code> (e.g. <code>05/06/2026</code>). Thai Buddhist years like <code>2569</code> convert automatically. Leave blank for "not scheduled yet".</td></tr>
+    <tr><td><b>Description</b></td><td>The milestone name. <b>This is the identity</b> — rows with the same description merge into one box (see §4).</td></tr>
+    <tr><td><b>Status</b></td><td>Plan / Done / Delayed (or your own). Sets the color of the dot, box border, and date.</td></tr>
+    <tr><td><b>Owner</b></td><td>Who is responsible (KING GEN, INNOXPLAN, MTEC-NECTEC, …). Shown as a tag — with a logo if you upload one (see §5).</td></tr>
+    <tr><td><b>Phase</b></td><td>Category (Meetings, Procurement, Testing, …). Sets the small colored strip on the box and the phase legend.</td></tr>
+    <tr><td><b>Notes</b></td><td>Extra detail, shown small inside the box.</td></tr>
+  </table>
+  <p>Row controls on the right:</p>
+  <ul>
+    <li><span class="btn">▲</span> / <span class="btn">▼</span> — move the row up or down.</li>
+    <li><span class="btn">✕</span> — delete the row.</li>
+    <li><span class="btn dark">+ Add milestone</span> (top toolbar) — adds a new blank row.</li>
+  </ul>
+
+  <h2><span class="num">3</span> Adding new dropdown values</h2>
+  <p>The Status, Owner, and Phase dropdowns each have an <b>➕ Add new…</b> entry at the bottom. Pick it to create a value on the spot:</p>
+  <ul>
+    <li><b>Owner / Phase</b> — type the name in the popup. Done.</li>
+    <li><b>Status</b> — type the label, then a small <b>color menu</b> appears; click a color and Confirm. The new status colors its dots, boxes, and dates everywhere.</li>
+  </ul>
+  <div class="tip">New values become available in every row's dropdown, and are saved inside your project file (see §8).</div>
+
+  <h2><span class="num">4</span> Grouping milestones with the same description</h2>
+  <p>If several rows share the <b>same Description</b>, the timeline shows them as <b>one box</b> that stacks each <code>date → status</code> line vertically.</p>
+  <ul>
+    <li>Example: <code>Meeting 1 — 01/01/2026 — Plan</code> and <code>Meeting 1 — 02/01/2026 — Done</code> → a single "Meeting 1" box listing both dates.</li>
+    <li>The box sits at the <b>earliest</b> date; its dot/border use the <b>latest</b> status's color.</li>
+    <li>A unique description simply shows as a normal single-line box.</li>
+  </ul>
+
+  <h2><span class="num">5</span> Company logos</h2>
+  <p>Open the <b>Company logos</b> panel (under the editor). It lists every owner you use.</p>
+  <ol>
+    <li>Make sure the company is set in a row's <b>Owner</b> column.</li>
+    <li>In the logos panel, find that company and click <span class="btn">📷</span> to upload its logo image.</li>
+    <li>Every box with that owner now shows the logo <b>next to the company name</b>, automatically.</li>
+  </ol>
+  <ul>
+    <li>Upload <b>once per company</b> — not per row.</li>
+    <li>Click <span class="btn">✕</span> in the panel to remove a logo.</li>
+  </ul>
+  <div class="tip">Logos are embedded inside the file/project — they travel with Save/Load, Export PNG, Print, and the online link. No separate image files to manage.</div>
+
+  <h2><span class="num">6</span> Fitting everything on one page (Rows)</h2>
+  <p>A long timeline in a single line becomes tiny on a slide. Use the <b>Rows</b> dropdown in the toolbar to wrap it into stacked rows:</p>
+  <ul>
+    <li><b>2 rows</b> (default) — best for ~15–20 milestones on a landscape A4 / 16:9 slide. Boxes are larger and readable.</li>
+    <li><b>3 rows</b> — if you have many milestones and 2 still feels cramped.</li>
+    <li><b>1 row</b> — the classic single horizontal line.</li>
+  </ul>
+  <p>Reading order is row 1 left-to-right, then row 2, in date order.</p>
+
+  <h2><span class="num">7</span> Moving things by hand (drag)</h2>
+  <p>The layout arranges itself automatically, but you can fine-tune anything like in PowerPoint:</p>
+  <ul>
+    <li><b>Move a box</b> — drag the box.</li>
+    <li><b>Move a dot</b> — drag the dot left/right along its line.</li>
+    <li><b>Move a connector end</b> — drag the small circle where the dotted line meets the box.</li>
+    <li><b>Pan the whole chart</b> — drag an empty area of the background.</li>
+    <li><b>Zoom</b> — mouse wheel / trackpad scroll over the chart.</li>
+    <li><b>Reset view</b> — double-click the empty background.</li>
+    <li><span class="btn">↺ Reset layout</span> — undo all manual moves and return to auto-arrange.</li>
+  </ul>
+  <div class="note">Your manual positions are saved with the project (§8) and appear in the exported image and print.</div>
+
+  <h2><span class="num">8</span> Saving &amp; reloading your work</h2>
+  <p>The tool keeps one project as one small <code>.json</code> file:</p>
+  <ul>
+    <li><span class="btn">💾 Save JSON</span> — downloads <code>project_timeline.json</code> with everything: milestones, custom statuses/owners/phases, logos, row count, and manual layout.</li>
+    <li><span class="btn">📂 Load JSON</span> — pick a saved file to restore that project exactly.</li>
+  </ul>
+  <div class="warn">Editing in the browser is <b>not</b> auto-saved. Click <b>Save JSON</b> before closing, and keep that file to continue later.</div>
+  <p><b>Tip:</b> keep one JSON per project (e.g. <code>EMMA-2026.json</code>). The HTML tool stays the same; only the JSON changes.</p>
+
+  <h2><span class="num">9</span> Export PNG (image for PowerPoint)</h2>
+  <ul>
+    <li>Click <span class="btn">🖼 Export PNG</span> → it downloads <code>project_timeline_chart.png</code>.</li>
+    <li>The image is <b>cropped to the chart</b> (no empty margins), at 2× resolution, on a white background, with logos included.</li>
+    <li>Drag-and-drop that PNG straight onto a PowerPoint slide.</li>
+  </ul>
+
+  <h2><span class="num">10</span> Print / PDF</h2>
+  <ul>
+    <li>Click <span class="btn">🖨 Print / PDF</span> (or <kbd>Ctrl/Cmd</kbd> + <kbd>P</kbd>).</li>
+    <li>Choose <b>Landscape</b>, and "Save as PDF" as the destination to make a shareable PDF.</li>
+    <li>The editor and toolbar are hidden automatically — only the title and timeline print.</li>
+  </ul>
+  <div class="tip">If the timeline looks small when printing, set the <b>Rows</b> dropdown to 2 or 3 first so it fills the page.</div>
+
+  <h2><span class="num">11</span> Sharing via GitHub (online link)</h2>
+  <p>The tool is hosted so others can open it in a browser, no files needed:</p>
+  <p><code>https://elonmark11.github.io/Bua/project%20timeline%20collapse%20drop%20down.html</code></p>
+  <p><b>To update the online version after you change the file:</b></p>
+  <ol>
+    <li>Go to the <code>Elonmark11/Bua</code> repository on github.com.</li>
+    <li>Open the file, drag your updated HTML in (or use "Upload files"), keeping the same name.</li>
+    <li>Click <b>Commit changes</b>. The link refreshes within a minute or two.</li>
+  </ol>
+  <div class="note">The link shows the <em>tool</em>. To share a specific project's data, also send the matching <code>.json</code> file (the recipient opens the link, then Load JSON).</div>
+
+  <h2><span class="num">12</span> Troubleshooting</h2>
+  <table>
+    <tr><th>Problem</th><th>Fix</th></tr>
+    <tr><td>Changes disappeared after closing</td><td>You didn't Save JSON. Always Save before closing; reload with Load JSON.</td></tr>
+    <tr><td>Timeline too small on the slide</td><td>Increase the <b>Rows</b> dropdown (2 or 3) before exporting/printing.</td></tr>
+    <tr><td>A logo doesn't show</td><td>Check the row's Owner name matches the one you uploaded the logo for (spelling/case). Re-upload in the logos panel if needed.</td></tr>
+    <tr><td>Boxes overlap after dragging</td><td>Click <b>↺ Reset layout</b> to return to auto-arrange.</td></tr>
+    <tr><td>Two milestones merged unexpectedly</td><td>They have the exact same Description. Make the descriptions different to split them.</td></tr>
+    <tr><td>Online link looks old</td><td>Re-upload the file to GitHub (§11) and wait a minute.</td></tr>
+  </table>
+
+  <footer>
+    Project Timeline Tool — internal guide. Keep this file with the tool. To re-print: open in a browser → Ctrl/Cmd + P → Save as PDF.
+  </footer>
+</div>
+</body>
+</html>
