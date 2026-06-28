@@ -82,6 +82,13 @@
   .modal-cancel{font-family:inherit;font-size:13px;padding:7px 16px;border-radius:8px;border:.5px solid var(--line);background:#f3f1ec;cursor:pointer}
   .modal-confirm{font-family:inherit;font-size:13px;font-weight:700;padding:7px 16px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;cursor:pointer}
 
+  /* logo manager */
+  .logo-mgr{display:flex;flex-wrap:wrap;gap:12px;padding:12px 14px}
+  .logo-card{display:flex;align-items:center;gap:10px;border:.5px solid var(--line);border-radius:10px;padding:8px 12px;background:#faf9f6;min-width:235px}
+  .logo-thumb{width:56px;height:34px;flex:0 0 auto;background:#fff;border:.5px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#bbb;overflow:hidden}
+  .logo-thumb img{max-width:100%;max-height:100%;object-fit:contain}
+  .logo-name{font-size:13px;font-weight:600;flex:1;word-break:break-word}
+
   @media print{
     body{padding:0;background:#fff}
     .toolbar,.panel,.hint,.subtitle,.legend{display:none!important}
@@ -103,6 +110,13 @@
     <button onclick="document.getElementById('loadFile').click()">📂 โหลด JSON</button>
     <input type="file" id="loadFile" accept="application/json" style="display:none" onchange="loadJSON(event)">
     <button onclick="resetLayout()">↺ จัดเรียงใหม่ / Reset layout</button>
+    <label style="font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px">แถว / Rows:
+      <select id="rowsSel" onchange="setRows(this.value)" style="font-family:inherit;font-size:13px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+      </select>
+    </label>
     <div class="spacer"></div>
     <button onclick="exportPNG()">🖼 Export PNG</button>
     <button onclick="window.print()">🖨 Print / PDF</button>
@@ -126,6 +140,16 @@
         <tbody id="tbody"></tbody>
       </table>
       <div class="hint">วันที่รองรับรูปแบบ dd/mm/yyyy (พ.ศ. เช่น 2569 จะถูกแปลงเป็น ค.ศ. อัตโนมัติ) · เว้นว่างได้สำหรับรายการที่ยังไม่กำหนดวัน · ลากลำดับด้วยปุ่ม ▲▼</div>
+    </div>
+  </div>
+
+  <div class="panel" id="logoPanel">
+    <div class="panel-h" onclick="document.getElementById('logoPanel').classList.toggle('collapsed')">
+      <span class="chev">▼</span> โลโก้บริษัท (Company logos)
+    </div>
+    <div class="panel-b">
+      <div class="logo-mgr" id="logoMgr"></div>
+      <div class="hint">อัปโหลดโลโก้หนึ่งครั้งต่อชื่อผู้รับผิดชอบ · โลโก้ถูกฝังในไฟล์/JSON (ออฟไลน์และบน GitHub Pages ได้) · พิมพ์ชื่อบริษัทในตาราง แล้วโลโก้จะปรากฏบนกล่องอัตโนมัติพร้อมชื่อ</div>
     </div>
   </div>
 
@@ -171,6 +195,9 @@ let PHASE_COLORS = {
   Reporting:'#7B61FF', Registration:'#2E9E8F', '':'#bbb'
 };
 
+// owner name (exact, trimmed) -> logo image as base64 data URI; shown on every box with that owner
+let LOGOS = {};
+
 // Palette for new phases and new status swatches
 const PALETTE = ['#5B8DEF','#2E9E8F','#E0A93B','#7B61FF','#cf3b3b','#3f9142','#9a958c','#C0563B','#e07b3b','#b35b8f'];
 
@@ -179,6 +206,8 @@ const PALETTE = ['#5B8DEF','#2E9E8F','#E0A93B','#7B61FF','#cf3b3b','#3f9142','#9
 let LAYOUT = {};
 // whole-chart pan/zoom
 let VIEW = { panX:0, panY:0, zoom:1 };
+// number of stacked serpentine rows (1 = single line; 2/3 wrap the timeline to fit one page)
+let ROWS = 2;
 
 // ---- seed data ----
 let DATA = [
@@ -357,8 +386,41 @@ function renderTable(){
     tb.appendChild(tr);
   });
   tb.querySelectorAll('textarea').forEach(autoG);
+  renderLogoManager();
 }
 function autoG(t){t.style.height='auto';t.style.height=t.scrollHeight+'px';}
+
+// union of OWNERS (non-empty) and owners used in DATA, de-duped, first-appearance order
+function ownerList(){
+  const seen=new Set(), out=[];
+  OWNERS.forEach(o=>{const k=String(o||'').trim(); if(k&&!seen.has(k)){seen.add(k);out.push(k);}});
+  DATA.forEach(r=>{const k=String(r.owner||'').trim(); if(k&&!seen.has(k)){seen.add(k);out.push(k);}});
+  return out;
+}
+function renderLogoManager(){
+  const host=document.getElementById('logoMgr'); if(!host) return;
+  const owners=ownerList();
+  host.innerHTML='';
+  if(!owners.length){host.innerHTML='<div class="hint">ยังไม่มีผู้รับผิดชอบ — เพิ่มในตารางก่อน / No owners yet.</div>';return;}
+  owners.forEach(name=>{
+    const card=document.createElement('div'); card.className='logo-card';
+    const thumb=document.createElement('div'); thumb.className='logo-thumb';
+    if(LOGOS[name]){const im=document.createElement('img');im.src=LOGOS[name];thumb.appendChild(im);}
+    else thumb.textContent='no logo';
+    const nm=document.createElement('div'); nm.className='logo-name'; nm.textContent=name;
+    const up=document.createElement('button'); up.className='iconbtn'; up.title='อัปโหลด / Upload'; up.textContent='📷';
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.style.display='none';
+    inp.onchange=ev=>{const f=ev.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{LOGOS[name]=rd.result; renderLogoManager(); renderTimeline();}; rd.readAsDataURL(f); ev.target.value='';};
+    up.onclick=()=>inp.click();
+    card.appendChild(thumb); card.appendChild(nm); card.appendChild(up); card.appendChild(inp);
+    if(LOGOS[name]){
+      const rm=document.createElement('button'); rm.className='iconbtn'; rm.title='ลบโลโก้ / Remove'; rm.textContent='✕';
+      rm.onclick=()=>{delete LOGOS[name]; renderLogoManager(); renderTimeline();};
+      card.appendChild(rm);
+    }
+    host.appendChild(card);
+  });
+}
 
 function upd(i,k,v){DATA[i][k]=v;renderTimeline();}
 function addRow(){DATA.push({date:'',desc:'รายการใหม่',status:'plan',owner:'',phase:'',notes:''});renderTable();renderTimeline();}
@@ -497,7 +559,7 @@ function heightFor(g){
   let h=18;
   const owner=g.owner||'';
   const desc=g.desc||(g.r&&g.r.desc)||'';
-  if(owner) h+=17;
+  if(owner) h+= (LOGOS[owner]?30:17);
   h+=lines(desc,boxW,13).length*18;
   // entries (group) or single-row notes
   if(g.entries){
@@ -547,63 +609,60 @@ function packLevel(levels,x0,x1,gap){
 // ---- timeline (SVG, grouped, multi-level staggered) ----
 const NS='http://www.w3.org/2000/svg';
 function renderTimeline(){
+  window._logoPlacements=[]; // {href,x,y,w,h} in content coords, for reliable PNG export
   const groups=groupedData();
   const n=groups.length;
   const COLW=190, padX=70;
-  const W=padX*2+Math.max(1,n-1)*COLW+(n===1?COLW:0);
   const boxW=COLW-26;
   const axisGap=40;     // gap from axis to first box level
   const levelGap=14;    // vertical gap between stacked levels
   const dateBand=26;    // room reserved near axis for the date label
   const sideGap=10;     // horizontal gap used by interval packing
+  const rowGap=46;      // vertical gap between serpentine rows
 
-  // ---- 1st pass: assign side + level + compute box heights ----
-  const aboveLevels=[]; // each level = array of {lo,hi}
-  const belowLevels=[];
-  const placed=groups.map((g,k)=>{
-    const x=padX+(n===1?COLW/2:k*COLW);
-    let boxX=x-boxW/2;
-    // clamp horizontally inside [0,W]
-    if(boxX<2) boxX=2;
-    if(boxX+boxW>W-2) boxX=W-2-boxW;
-    const boxH=heightFor(g);
-    const above=k%2===0;
-    const lvl=above? packLevel(aboveLevels,boxX,boxX+boxW,sideGap)
-                   : packLevel(belowLevels,boxX,boxX+boxW,sideGap);
-    return {g,x,boxX,boxH,above,lvl};
-  });
+  // ---- serpentine: split groups across ROWS stacked horizontal axes ----
+  const R=Math.max(1,Math.min(ROWS,Math.max(1,n)));
+  const perRow=Math.max(1,Math.ceil(n/R));
+  const colsMax=Math.max(1,Math.min(perRow,Math.max(1,n)));
+  const W=padX*2+Math.max(0,colsMax-1)*COLW+(colsMax<=1?COLW:0);
 
-  // ---- compute vertical extents from deepest level used on each side ----
-  // baseTop = top of level-0 box on the above side
-  // For each above box: boxBottom = axisY - axisGap - dateBand - lvl*levelGap ... but
-  // we need a fixed level baseline. Use cumulative max box height per level band.
-  function bandHeights(placedSide){
-    // for each level, the max box height present on that level
+  function bandHeights(arr){
     const maxH={};
-    placedSide.forEach(p=>{ maxH[p.lvl]=Math.max(maxH[p.lvl]||0,p.boxH); });
+    arr.forEach(p=>{ maxH[p.lvl]=Math.max(maxH[p.lvl]||0,p.boxH); });
     return maxH;
   }
-  const aboveArr=placed.filter(p=>p.above);
-  const belowArr=placed.filter(p=>!p.above);
-  const aboveBands=bandHeights(aboveArr);
-  const belowBands=bandHeights(belowArr);
-  // cumulative offset (distance from axis to TOP of a given above-level / to TOP of a below-level box)
   function cumOffsets(bands,levelCount){
-    // offsets[lvl] = distance from the inner edge (axis side) to the box's near edge
     const off=[]; let acc=axisGap+dateBand;
-    for(let l=0;l<levelCount;l++){
-      off[l]=acc;
-      acc+= (bands[l]||0) + levelGap;
-    }
+    for(let l=0;l<levelCount;l++){ off[l]=acc; acc+=(bands[l]||0)+levelGap; }
     return {off, total:acc};
   }
-  const aboveCum=cumOffsets(aboveBands,aboveLevels.length);
-  const belowCum=cumOffsets(belowBands,belowLevels.length);
 
-  const topH=Math.max(120,aboveCum.total)+20;
-  const botH=Math.max(120,belowCum.total)+20;
-  const axisY=topH;
-  const H=topH+botH;
+  // ---- pass 1: lay out each row independently + measure its vertical extents ----
+  const rowsData=[];
+  for(let r=0;r<R;r++){
+    const slice=groups.slice(r*perRow,(r+1)*perRow);
+    const aboveLevels=[], belowLevels=[];
+    const items=slice.map((g,c)=>{
+      const x=padX+(colsMax<=1?COLW/2:c*COLW);
+      let boxX=x-boxW/2;
+      if(boxX<2) boxX=2;
+      if(boxX+boxW>W-2) boxX=W-2-boxW;
+      const boxH=heightFor(g);
+      const above=c%2===0;
+      const lvl=above? packLevel(aboveLevels,boxX,boxX+boxW,sideGap)
+                     : packLevel(belowLevels,boxX,boxX+boxW,sideGap);
+      return {g,x,boxX,boxH,above,lvl};
+    });
+    const aboveCum=cumOffsets(bandHeights(items.filter(p=>p.above)),aboveLevels.length);
+    const belowCum=cumOffsets(bandHeights(items.filter(p=>!p.above)),belowLevels.length);
+    const topExt=Math.max(120,aboveCum.total)+20;
+    const botExt=Math.max(120,belowCum.total)+20;
+    rowsData.push({items,aboveCum,belowCum,topExt,botExt,axisY:0});
+  }
+  // stack rows vertically: each row's axis sits below the previous row's lower extent
+  let _yCur=0;
+  rowsData.forEach((rd,r)=>{ rd.axisY=_yCur+rd.topExt; _yCur=rd.axisY+rd.botExt+(r<R-1?rowGap:0); });
+  const H=Math.max(160,_yCur);
 
   const svg=document.createElementNS(NS,'svg');
   svg.setAttribute('width',W); svg.setAttribute('height',H);
@@ -627,19 +686,23 @@ function renderTimeline(){
   bg.setAttribute('fill','transparent');
   viewport.appendChild(bg);
 
-  // axis line
-  const ax=document.createElementNS(NS,'line');
-  ax.setAttribute('x1',padX-30); ax.setAttribute('x2',W-padX+30);
-  ax.setAttribute('y1',axisY); ax.setAttribute('y2',axisY);
-  ax.setAttribute('stroke','#c7c2b8'); ax.setAttribute('stroke-width',3);
-  ax.setAttribute('stroke-linecap','round');
-  viewport.appendChild(ax);
-
   // axis x-range for clamping dragged dots
   const axisMinX=padX-20, axisMaxX=W-padX+20;
 
-  placed.forEach(p=>{
-    const {g,boxH,above,lvl}=p;
+  // ---- draw each serpentine row: its own axis line + its boxes ----
+  rowsData.forEach(rd=>{
+    const axisY=rd.axisY, aboveCum=rd.aboveCum, belowCum=rd.belowCum;
+
+    // axis line for this row
+    const ax=document.createElementNS(NS,'line');
+    ax.setAttribute('x1',padX-30); ax.setAttribute('x2',W-padX+30);
+    ax.setAttribute('y1',axisY); ax.setAttribute('y2',axisY);
+    ax.setAttribute('stroke','#c7c2b8'); ax.setAttribute('stroke-width',3);
+    ax.setAttribute('stroke-linecap','round');
+    viewport.appendChild(ax);
+
+    rd.items.forEach(p=>{
+      const {g,boxH,above,lvl}=p;
     const desc=g.desc;
     const ov=LAYOUT[desc]||{};
     const st=STATUS[g.status]||STATUS.plan;
@@ -723,15 +786,28 @@ function renderTimeline(){
     gb.appendChild(strip);
 
     let ty=boxY+20;
-    // owner tag
+    // owner: logo (if uploaded) + owner text together; text-only when no logo
     if(g.owner){
+      let textX=boxX+14;
+      if(LOGOS[g.owner]){
+        const im=document.createElementNS(NS,'image');
+        im.setAttribute('href',LOGOS[g.owner]);
+        im.setAttributeNS('http://www.w3.org/1999/xlink','href',LOGOS[g.owner]);
+        im.setAttribute('x',boxX+14); im.setAttribute('y',boxY+8);
+        im.setAttribute('height',18); im.setAttribute('width',38);
+        im.setAttribute('preserveAspectRatio','xMinYMid meet');
+        gb.appendChild(im);
+        window._logoPlacements.push({href:LOGOS[g.owner],x:boxX+14,y:boxY+8,w:38,h:18});
+        textX=boxX+14+44; // owner text sits to the right of the logo
+      }
       const og=document.createElementNS(NS,'text');
-      og.setAttribute('x',boxX+14); og.setAttribute('y',ty);
+      og.setAttribute('x',textX); og.setAttribute('y',LOGOS[g.owner]?boxY+21:ty);
       og.setAttribute('font-size','10.5'); og.setAttribute('font-weight','800');
       og.setAttribute('fill',ph); og.setAttribute('letter-spacing','.3');
       og.setAttribute('font-family','Segoe UI,Sarabun,sans-serif');
       og.textContent=g.owner.toUpperCase();
-      gb.appendChild(og); ty+=17;
+      gb.appendChild(og);
+      ty += LOGOS[g.owner]?30:17;
     }
     // description (wrapped, once)
     const descLines=wrapText(gb,NS,g.desc,boxX+14,ty,boxW-22,15,'#1a1a1a',600,13);
@@ -760,12 +836,13 @@ function renderTimeline(){
 
     // remember geometry for live drag updates (in content coords)
     gb._geo={boxX,boxY,boxW,boxH,dotx,axisY,desc};
+    });
   });
 
   const holder=document.getElementById('tlScroll');
   holder.innerHTML=''; holder.appendChild(svg);
   window._lastSVG=svg; window._svgDims={W,H};
-  window._tlState={axisY,axisMinX,axisMaxX,boxW,W,H};
+  window._tlState={axisY:(rowsData[0]?rowsData[0].axisY:0),axisMinX,axisMaxX,boxW,W,H};
   attachDragHandlers(svg);
   renderPhaseLegend();
   renderStatusLegend();
@@ -977,6 +1054,12 @@ function resetLayout(){
   renderTimeline();
 }
 
+// ---- serpentine row count ----
+function setRows(v){
+  ROWS=Math.max(1,Math.min(6,parseInt(v,10)||1));
+  renderTimeline();
+}
+
 // ---- save/load (extended shape) ----
 function saveJSON(){
   const payload={
@@ -986,6 +1069,8 @@ function saveJSON(){
     phases: PHASES,
     statuses: STATUS,
     phaseColors: PHASE_COLORS,
+    logos: LOGOS,
+    rows: ROWS,
     layout: LAYOUT,
     view: VIEW
   };
@@ -999,8 +1084,8 @@ function loadJSON(e){
     // accept bare array (legacy), {title,milestones} (old), or new full shape
     if(Array.isArray(j)){
       DATA=j;
-      // legacy files have no layout/view; reset to defaults
-      LAYOUT={}; VIEW={panX:0,panY:0,zoom:1};
+      // legacy files have no layout/view/logos; reset to defaults
+      LAYOUT={}; VIEW={panX:0,panY:0,zoom:1}; LOGOS={};
     } else {
       if(j.title) document.getElementById('title').textContent=j.title;
       DATA=j.milestones||[];
@@ -1032,6 +1117,11 @@ function loadJSON(e){
       if(j.statuses&&typeof j.statuses==='object'){
         Object.assign(STATUS,j.statuses);
       }
+      // restore logos (owner -> data URI)
+      LOGOS=(j.logos&&typeof j.logos==='object')?j.logos:{};
+      // restore serpentine row count + sync the selector
+      ROWS=(+j.rows>=1)?Math.min(6,+j.rows):2;
+      { const rs=document.getElementById('rowsSel'); if(rs) rs.value=ROWS; }
     }
     renderTable(); renderTimeline();
   }catch(err){alert('ไฟล์ไม่ถูกต้อง: '+err.message);}};
@@ -1039,34 +1129,64 @@ function loadJSON(e){
 }
 
 // ---- export PNG (16:9 PowerPoint slide: 1920x1080) ----
+// Export PNG cropped tightly to the chart (its natural W×H bounds), 2x for crispness.
 function exportPNG(){
-  const svgEl=window._lastSVG; if(!svgEl)return;
+  const svgEl=window._lastSVG; if(!svgEl){alert('ยังไม่มีไทม์ไลน์ / No chart yet');return;}
   const {W,H}=window._svgDims;
-  // 16:9 widescreen slide
-  const SW=1920, SH=1080;
-  // Scale to fit inside the slide preserving aspect ratio
-  const scale=Math.min(SW/W,SH/H);
-  const outW=SW, outH=SH;
-  const drawW=W*scale, drawH=H*scale;
-  const offX=(SW-drawW)/2, offY=(SH-drawH)/2;
 
   const clone=svgEl.cloneNode(true);
-  // render at native SVG dims, then canvas-scale
+  // capture the FULL chart regardless of on-screen pan/zoom
+  const vp=clone.querySelector('#viewport');
+  if(vp) vp.setAttribute('transform','translate(0,0) scale(1)');
+  // declare namespaces so it renders standalone (and logo <image> xlink:href works)
+  clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  clone.setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink');
+  clone.setAttribute('width',W);
+  clone.setAttribute('height',H);
+  clone.setAttribute('viewBox','0 0 '+W+' '+H);
+  clone.removeAttribute('style');
+  // Nested <image> logos are dropped by most browsers when an SVG is rasterized via <img>.
+  // Strip them here and paint them directly onto the canvas afterwards (reliable).
+  clone.querySelectorAll('image').forEach(im=>im.remove());
+  // opaque white background baked in (CSS background doesn't rasterize -> would be blank)
+  const bgRect=document.createElementNS(NS,'rect');
+  bgRect.setAttribute('x',0); bgRect.setAttribute('y',0);
+  bgRect.setAttribute('width',W); bgRect.setAttribute('height',H);
+  bgRect.setAttribute('fill','#ffffff');
+  clone.insertBefore(bgRect,clone.firstChild);
+
   const data=new XMLSerializer().serializeToString(clone);
+  const svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(data);
+  const scale=2; // 2x resolution
   const img=new Image();
-  const blob=new Blob([data],{type:'image/svg+xml;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
   img.onload=()=>{
     const cv=document.createElement('canvas');
-    cv.width=outW; cv.height=outH;
+    cv.width=Math.round(W*scale); cv.height=Math.round(H*scale);
     const ctx=cv.getContext('2d');
-    ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
-    ctx.drawImage(img,offX,offY,drawW,drawH);
-    URL.revokeObjectURL(url);
-    cv.toBlob(b=>dl(b,'project_timeline_slide_16x9.png'));
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.drawImage(img,0,0,cv.width,cv.height);
+
+    const placements=(window._logoPlacements||[]);
+    const finish=()=>cv.toBlob(b=>{ if(b){dl(b,'project_timeline_chart.png');} else {alert('Export ไม่สำเร็จ / Export failed');} });
+    if(!placements.length){ finish(); return; }
+    let pending=placements.length;
+    placements.forEach(pl=>{
+      const lim=new Image();
+      lim.onload=()=>{
+        // aspect-fit (meet) inside the pl box, left-aligned & vertically centered (xMinYMid)
+        const bx=pl.x*scale, by=pl.y*scale, bw=pl.w*scale, bh=pl.h*scale;
+        const ar=(lim.naturalWidth||1)/(lim.naturalHeight||1);
+        let dw=bw, dh=bw/ar;
+        if(dh>bh){ dh=bh; dw=bh*ar; }
+        ctx.drawImage(lim, bx, by+(bh-dh)/2, dw, dh);
+        if(--pending===0) finish();
+      };
+      lim.onerror=()=>{ if(--pending===0) finish(); };
+      lim.src=pl.href;
+    });
   };
-  img.onerror=()=>{URL.revokeObjectURL(url);alert('Export PNG ไม่สำเร็จ');};
-  img.src=url;
+  img.onerror=()=>{alert('Export PNG ไม่สำเร็จ (โหลดภาพไม่ได้) / image failed to load');};
+  img.src=svgUrl;
 }
 function dl(blob,name){
   const u=URL.createObjectURL(blob);const a=document.createElement('a');
