@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Timeline Collapse Drop Down</title>
+<style>
+  :root{
+    --bg:#f8f7f4; --card:#fff; --line:#e0ddd6; --ink:#1a1a1a; --muted:#888;
+    --plan:#9a958c; --done:#3f9142; --delay:#cf3b3b;
+    --planbg:#F1EFE8; --donebg:#EAF3DE; --delaybg:#FCEBEB;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'TH Sarabun New','TH SarabunPSK','Sarabun',sans-serif;font-size:12px;background:var(--bg);color:var(--ink);padding:1.5rem;line-height:1.45}
+  .wrap{max-width:1280px;margin:0 auto}
+  h1.title{font-size:22px;font-weight:700;outline:none;border-bottom:2px solid transparent;display:inline-block;padding:2px 4px;border-radius:4px}
+  h1.title:focus{border-bottom-color:var(--line);background:#fff}
+  .subtitle{font-size:11px;color:var(--muted);margin:2px 0 1rem 4px}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:center}
+  button{font-family:inherit;font-size:12px;font-weight:600;border:.5px solid var(--line);background:#fff;color:#222;padding:7px 13px;border-radius:8px;cursor:pointer;transition:.12s}
+  button:hover{background:#f3f1ec}
+  button.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+  button.primary:hover{background:#333}
+  .spacer{flex:1}
+
+  .panel{background:var(--card);border:.5px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
+  .panel-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:.5px solid var(--line);background:#faf9f6;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;user-select:none}
+  .panel-h .chev{transition:.15s;font-size:9px}
+  .panel.collapsed .panel-h .chev{transform:rotate(-90deg)}
+  .panel.collapsed .panel-b{display:none}
+
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#f3f1ec;padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;border-bottom:.5px solid var(--line)}
+  td{padding:5px 8px;border-bottom:.5px solid #f0ede8;vertical-align:middle}
+  tbody tr:hover{background:#faf9f6}
+  td input,td select,td textarea{width:100%;font-family:inherit;font-size:12px;border:.5px solid transparent;background:transparent;border-radius:6px;padding:5px 6px;color:#1a1a1a;resize:none}
+  td input:hover,td select:hover,td textarea:hover{border-color:#eee}
+  td input:focus,td select:focus,td textarea:focus{outline:none;border-color:#bbb;background:#fff}
+  td input::placeholder{color:#bbb;font-style:italic}
+  td.act{white-space:nowrap;text-align:right}
+  .iconbtn{border:none;background:transparent;cursor:pointer;font-size:13px;padding:3px 5px;border-radius:6px;color:#999;line-height:1}
+  .iconbtn:hover{background:#eee;color:#333}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+  /* timeline */
+  .tl-wrap{background:#fff;border:.5px solid var(--line);border-radius:12px;padding:8px}
+  /* slide frame — scrollable at natural size */
+  .slide-frame{
+    position:relative;
+    width:100%;
+    max-height:78vh;
+    background:#fff;
+    border:1.5px solid #c7c2b8;
+    border-radius:4px;
+    overflow:auto;
+    display:flex;
+    align-items:stretch;
+  }
+  .slide-frame svg{
+    display:block;
+  }
+  .legend{display:flex;gap:18px;align-items:center;margin:10px 6px 2px;font-size:11px;color:#555;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .lg-dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+
+  .hint{font-size:10.5px;color:var(--muted);margin:6px 4px}
+  .col-date{width:120px}.col-status{width:120px}.col-owner{width:130px}.col-phase{width:130px}.col-notes{width:200px}.col-act{width:80px}
+  .col-pd,.col-dl,.col-dn{width:120px}
+  /* logo resize grip: invisible (no icon on the chart) but appears on hover so you can still resize */
+  .tl-logoresize:hover{fill:#fff!important;stroke:#888!important}
+  /* editor shows ~10 rows then scrolls; header stays pinned so the chart sits just below */
+  .tbl-scroll{max-height:380px;overflow:auto}
+  thead th{position:sticky;top:0;z-index:2}
+  .col-show{width:54px;text-align:center}
+  .col-step{width:50px;text-align:center}
+
+  /* color-swatch modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .modal-box{background:#fff;border-radius:14px;padding:24px 28px;box-shadow:0 8px 40px rgba(0,0,0,.18);min-width:320px;max-width:90vw}
+  .modal-box h3{font-size:14px;font-weight:700;margin-bottom:4px}
+  .modal-box p{font-size:11px;color:#888;margin-bottom:16px}
+  .swatch-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+  .swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:.1s}
+  .swatch:hover{transform:scale(1.15);border-color:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.3)}
+  .swatch.selected{border-color:#fff;box-shadow:0 0 0 3px #333}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+  .modal-cancel{font-family:inherit;font-size:12px;padding:7px 16px;border-radius:8px;border:.5px solid var(--line);background:#f3f1ec;cursor:pointer}
+  .modal-confirm{font-family:inherit;font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;cursor:pointer}
+
+  /* logo manager */
+  .logo-mgr{display:flex;flex-wrap:wrap;gap:12px;padding:12px 14px}
+  .logo-card{display:flex;align-items:center;gap:10px;border:.5px solid var(--line);border-radius:10px;padding:8px 12px;background:#faf9f6;min-width:235px}
+  .logo-thumb{width:56px;height:34px;flex:0 0 auto;background:#fff;border:.5px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:8.5px;color:#bbb;overflow:hidden}
+  .logo-thumb img{max-width:100%;max-height:100%;object-fit:contain}
+  .logo-name{font-size:12px;font-weight:600;flex:1;word-break:break-word}
+
+  @media print{
+    body{padding:0;background:#fff}
+    .toolbar,.panel,.hint,.subtitle,.legend{display:none!important}
+    .tl-wrap{border:none;padding:0;overflow:visible}
+    h1.title{font-size:16px;margin-bottom:6px}
+    .slide-frame{border:none;overflow:visible;max-height:none;width:100%;break-inside:avoid;page-break-inside:avoid}
+    @page{size:landscape;margin:8mm}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="title" id="title" contenteditable="true" spellcheck="false">Project Timeline Collapse Drop Down</h1>
+  <div class="subtitle">แก้ไขข้อมูลในตารางด้านล่าง แล้วไทม์ไลน์จะอัปเดตทันที · คลิกหัวข้อเพื่อแก้ชื่อโครงการ</div>
+
+  <div class="toolbar">
+    <button class="primary" onclick="addRow()">+ เพิ่มรายการ (Add milestone)</button>
+    <button onclick="saveJSON()">💾 บันทึก JSON</button>
+    <button onclick="document.getElementById('loadFile').click()">📂 โหลด JSON</button>
+    <input type="file" id="loadFile" accept="application/json" style="display:none" onchange="loadJSON(event)">
+    <button onclick="resetLayout()">↺ จัดเรียงใหม่ / Reset layout</button>
+    <button onclick="renumberSteps()">🔢 จัดเลขขั้นตอน / Renumber steps</button>
+    <label style="font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px">แถว / Rows:
+      <select id="rowsSel" onchange="setRows(this.value)" style="font-family:inherit;font-size:12px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
+        <option value="auto" selected>Auto</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+    </label>
+    <label style="font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">ระยะห่างจุด / Spacing:
+      <input type="range" id="spacingSel" min="30" max="260" value="90" oninput="setSpacing(this.value)" style="width:120px;vertical-align:middle">
+      <input type="number" id="spacingNum" min="30" max="260" value="90" onchange="setSpacing(this.value)" style="font-family:inherit;font-size:12px;width:56px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
+      <span id="spacingVal" style="color:#666;min-width:34px">90px</span>
+    </label>
+    <button onclick="fitToSlide()" title="จัดให้พอดี 1 สไลด์ 16:9 / Fit to one 16:9 slide">▣ พอดีสไลด์ / Fit 16:9</button>
+    <button id="guideBtn" onclick="toggleGuide()" title="แสดง/ซ่อน กรอบ 16:9">⊞ กรอบ 16:9 / Guide: ON</button>
+    <label style="font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px">แสดงกี่กิจกรรม / Show first:
+      <input type="number" id="showN" min="0" onchange="setShowN(this.value)" style="font-family:inherit;font-size:12px;width:56px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
+    </label>
+    <span id="showCount" style="font-size:12px;color:#666"></span>
+    <div class="spacer"></div>
+    <button onclick="exportPNG()">🖼 Export PNG</button>
+    <button onclick="window.print()">🖨 Print / PDF</button>
+  </div>
+
+  <div class="panel" id="editorPanel">
+    <div class="panel-h" onclick="document.getElementById('editorPanel').classList.toggle('collapsed')">
+      <span class="chev">▼</span> ตารางรายการ (Milestone editor)
+    </div>
+    <div class="panel-b">
+      <div class="tbl-scroll">
+      <table>
+        <thead><tr>
+          <th class="col-show">แสดง<br>Show</th>
+          <th class="col-step">ลำดับ<br>Step</th>
+          <th class="col-date">วันที่นัด<br>Meeting date</th>
+          <th>รายละเอียด / Description</th>
+          <th class="col-pd">Plan date</th>
+          <th class="col-dl">Delayed</th>
+          <th class="col-dn">Done</th>
+          <th class="col-owner">ผู้รับผิดชอบ / Owner</th>
+          <th class="col-notes">หมายเหตุ / Notes</th>
+          <th class="col-act"></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      </div>
+      <div class="hint">วันที่รองรับรูปแบบ dd/mm/yyyy (พ.ศ. เช่น 2569 จะถูกแปลงเป็น ค.ศ. อัตโนมัติ) · เว้นว่างได้สำหรับรายการที่ยังไม่กำหนดวัน · ลากลำดับด้วยปุ่ม ▲▼</div>
+    </div>
+  </div>
+
+  <div class="panel" id="logoPanel">
+    <div class="panel-h" onclick="document.getElementById('logoPanel').classList.toggle('collapsed')">
+      <span class="chev">▼</span> โลโก้บริษัท (Company logos)
+    </div>
+    <div class="panel-b">
+      <div class="logo-mgr" id="logoMgr"></div>
+      <div class="hint">อัปโหลดโลโก้หนึ่งครั้งต่อชื่อผู้รับผิดชอบ · โลโก้ถูกฝังในไฟล์/JSON (ออฟไลน์และบน GitHub Pages ได้) · พิมพ์ชื่อบริษัทในตาราง แล้วโลโก้จะปรากฏบนกล่องอัตโนมัติพร้อมชื่อ</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span id="statusLegend"></span>
+  </div>
+
+  <div class="hint" id="dragHint">ลากกล่อง/จุด เพื่อย้าย · ลากพื้นหลังเพื่อเลื่อน · ดับเบิลคลิกพื้นหลังเพื่อรีเซ็ตมุมมอง · (drag boxes/dots to move · drag background to pan · double-click background to reset view)</div>
+  <div class="tl-wrap">
+    <div class="slide-frame" id="slideFrame">
+      <div id="tlScroll" style="width:100%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Color-swatch modal (hidden by default) -->
+<div class="modal-overlay" id="swatchModal" style="display:none">
+  <div class="modal-box">
+    <h3 id="swatchTitle">เลือกสีสำหรับสถานะใหม่ / Pick a color</h3>
+    <p>คลิกสีที่ต้องการแล้วกด Confirm</p>
+    <div class="swatch-row" id="swatchRow"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="swatchCancel">ยกเลิก / Cancel</button>
+      <button class="modal-confirm" id="swatchConfirm">ยืนยัน / Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- mutable state ----
+let STATUS = {
+  plan:    {label:'Plan date', color:'#9a958c', bg:'#F1EFE8'},
+  done:    {label:'Done',      color:'#3f9142', bg:'#EAF3DE'},
+  delayed: {label:'Delayed',   color:'#cf3b3b', bg:'#FCEBEB'}
+};
+let OWNERS = ['','KING GEN','INNOXPLAN','MTEC-NECTEC'];
+let PHASES = ['Meetings','Procurement','Testing','Reporting','Registration'];
+let PHASE_COLORS = {
+  Meetings:'#5B8DEF', Procurement:'#E0A93B', Testing:'#C0563B',
+  Reporting:'#7B61FF', Registration:'#2E9E8F', '':'#bbb'
+};
+
+// owner name (exact, trimmed) -> logo image as base64 data URI; shown on every box with that owner
+let LOGOS = {};
+
+// Palette for new phases and new status swatches
+const PALETTE = ['#5B8DEF','#2E9E8F','#E0A93B','#7B61FF','#cf3b3b','#3f9142','#9a958c','#C0563B','#e07b3b','#b35b8f'];
+
+// ---- manual layout overrides (keyed by trimmed desc, same key as groupedData) ----
+// LAYOUT[desc] = { bx, by, dotx, cdx, cdy } — any field absent => use auto value.
+let LAYOUT = {};
+// whole-chart pan/zoom
+let VIEW = { panX:0, panY:0, zoom:1 };
+// number of stacked serpentine rows (1 = single line; 2/3 wrap the timeline to fit one page; 'auto' = fit available width)
+let ROWS = 'auto';
+
+// ---- seed data ----
+let DATA = [];
+
+// ---- utility ----
+function esc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function parseDate(s){
+  if(!s) return null;
+  const first=String(s).split(/[,–-]/)[0].trim();
+  const m=first.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if(!m) return null;
+  let [_,d,mo,y]=m; y=+y; if(y<100)y+=2000; if(y>2500)y-=543;
+  const dt=new Date(y,+mo-1,+d);
+  return isNaN(dt)?null:dt;
+}
+function formatDate(d){
+  if(!d) return '—';
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+(d.getFullYear()+543);
+}
+// Display format: dd/mm/yyyy BE (Buddhist year) — used on chart labels
+function fmtDisplay(s){
+  if(!s||s==='—') return s||'—';
+  const d=parseDate(s); if(!d) return s;
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+(d.getFullYear()+543);
+}
+function slugify(label){
+  return label.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||('s'+Date.now());
+}
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return {r,g,b};
+}
+function tintBg(hex){
+  // create a very light tinted background (mix 15% color + 85% white)
+  const {r,g,b}=hexToRgb(hex);
+  const tr=Math.round(r*0.15+255*0.85), tg=Math.round(g*0.15+255*0.85), tb=Math.round(b*0.15+255*0.85);
+  return 'rgb('+tr+','+tg+','+tb+')';
+}
+
+// ---- sorted & grouped data ----
+function sortedData(){
+  return DATA.map((r,i)=>({r,i,d:parseDate(r.date)}))
+    .sort((a,b)=>{
+      if(a.d&&b.d) return a.d-b.d || a.i-b.i;
+      if(a.d&&!b.d) return -1;
+      if(!a.d&&b.d) return 1;
+      return a.i-b.i;
+    }).map(x=>x.r);
+}
+
+function groupedData(){
+  // group by trimmed description (exact match)
+  const groups = []; // ordered by first appearance
+  const map = {};   // desc -> group object
+  DATA.forEach((r,idx)=>{
+    if(r.show===false) return;   // hidden from chart
+    const key = String(r.desc||'').trim();
+    if(!map[key]){
+      const g = {desc:key, entries:[], _rows:[], _firstIdx:idx};
+      map[key] = g;
+      groups.push(g);
+    }
+    map[key]._rows = map[key]._rows || [];
+    map[key]._rows.push(r);
+    [['plan',r.planDate],['delayed',r.delayedDate],['done',r.doneDate]].forEach(([stt,dt])=>{
+      if(dt && String(dt).trim()) map[key].entries.push({date:dt, status:stt, _origIdx:idx});
+    });
+  });
+
+  groups.forEach(g=>{
+    // entries in fixed lifecycle order: Plan date → Delayed → Done
+    const _seq={plan:0,delayed:1,done:2};
+    g.entries.sort((a,b)=>(_seq[a.status]!=null?_seq[a.status]:9)-(_seq[b.status]!=null?_seq[b.status]:9));
+
+    // meeting date (column "Meeting date") = headline date shown outside the box
+    g.meetingDate = g._rows.map(r=>r.date).find(Boolean)||'';
+    // headline / position = meeting date; fall back to earliest filled plan/delayed/done date (by value)
+    let _earliest=null, _earliestStr='';
+    g.entries.forEach(e=>{ const d=parseDate(e.date); if(d && (!_earliest || d<_earliest)){ _earliest=d; _earliestStr=e.date; } });
+    g.sortDate = parseDate(g.meetingDate) || _earliest;
+    g.sortDateStr = g.meetingDate || _earliestStr;
+
+    // status by advancement: Done > Delayed > Plan
+    g.status = g.entries.some(e=>e.status==='done') ? 'done'
+             : g.entries.some(e=>e.status==='delayed') ? 'delayed'
+             : 'plan';
+    // owner / phase / notes taken from the group's source rows (first non-empty)
+    g.owner = g._rows.map(r=>r.owner).find(Boolean)||'';
+    g.phase = g._rows.map(r=>r.phase).find(Boolean)||'';
+    g.notes = g._rows.map(r=>r.notes).find(Boolean)||'';
+    // group step = smallest numeric step among its entries (null if none)
+    const _steps=g._rows.map(r=>parseFloat(r.step)).filter(v=>!isNaN(v));
+    g.step=_steps.length?Math.min(..._steps):null;
+  });
+
+  // sort groups: by Step (ascending) first; stepless groups fall back to date, then first appearance
+  groups.sort((a,b)=>{
+    const sa=a.step, sb=b.step;
+    if(sa!=null&&sb!=null) return sa-sb || a._firstIdx-b._firstIdx;
+    if(sa!=null&&sb==null) return -1;
+    if(sa==null&&sb!=null) return 1;
+    if(a.sortDate&&b.sortDate) return a.sortDate-b.sortDate || a._firstIdx-b._firstIdx;
+    if(a.sortDate&&!b.sortDate) return -1;
+    if(!a.sortDate&&b.sortDate) return 1;
+    return a._firstIdx-b._firstIdx;
+  });
+
+  return groups;
+}
+
+// ---- editor table ----
+function buildStatusOpts(currentStatus){
+  let html='';
+  Object.keys(STATUS).forEach(k=>{
+    const s=STATUS[k];
+    html+=`<option value="${esc(k)}" ${k===currentStatus?'selected':''} style="color:${esc(s.color)};font-weight:700">${esc(s.label)}</option>`;
+  });
+  html+=`<option value="__add__">➕ เพิ่มใหม่… / Add new…</option>`;
+  return html;
+}
+function buildOwnerOpts(currentOwner){
+  let html='';
+  OWNERS.forEach(o=>{
+    html+=`<option value="${esc(o)}" ${o===currentOwner?'selected':''}>${esc(o)}</option>`;
+  });
+  if(!OWNERS.includes(currentOwner)&&currentOwner!='__add__'){
+    html+=`<option value="${esc(currentOwner)}" selected>${esc(currentOwner)}</option>`;
+  }
+  html+=`<option value="__add__">➕ เพิ่มใหม่… / Add new…</option>`;
+  return html;
+}
+function buildPhaseOpts(currentPhase){
+  let html='';
+  const all=['',...PHASES];
+  all.forEach(p=>{
+    html+=`<option value="${esc(p)}" ${p===currentPhase?'selected':''}>${esc(p)}</option>`;
+  });
+  if(!all.includes(currentPhase)&&currentPhase!='__add__'){
+    html+=`<option value="${esc(currentPhase)}" selected>${esc(currentPhase)}</option>`;
+  }
+  html+=`<option value="__add__">➕ เพิ่มใหม่… / Add new…</option>`;
+  return html;
+}
+
+function renderTable(){
+  sortDataByStep(); // editor rows follow Step order
+  const tb=document.getElementById('tbody'); tb.innerHTML='';
+  DATA.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    const st=STATUS[r.status]||STATUS.plan;
+    tr.innerHTML=`
+      <td class="col-show" style="text-align:center"><input type="checkbox" ${r.show===false?'':'checked'} onchange="toggleShow(${i},this.checked)"></td>
+      <td class="col-step" style="text-align:center"><input type="number" value="${r.step==null?'':esc(String(r.step))}" style="width:42px" oninput="upd(${i},'step',this.value)" onchange="renderTable()"></td>
+      <td class="col-date" style="white-space:nowrap"><input type="text" placeholder="— click —" value="${esc(r.date||'')}" onfocus="dpFocus(this,${i},'date')" onchange="dpChange(this,${i},'date')" onblur="dpBlur(this,${i},'date')" style="cursor:pointer;width:90px">${r.date?`<button class="iconbtn" onclick="dpClear(${i},'date')" title="ล้างวัน / Clear">✕</button>`:''}</td>
+      <td><textarea rows="1" oninput="upd(${i},'desc',this.value);autoG(this)">${esc(r.desc)}</textarea></td>
+      <td class="col-pd" style="white-space:nowrap"><input type="text" placeholder="— click —" value="${esc(r.planDate||'')}" onfocus="dpFocus(this,${i},'planDate')" onchange="dpChange(this,${i},'planDate')" onblur="dpBlur(this,${i},'planDate')" style="cursor:pointer;width:90px">${r.planDate?`<button class="iconbtn" onclick="dpClear(${i},'planDate')" title="ล้างวัน / Clear">✕</button>`:''}</td>
+      <td class="col-dl" style="white-space:nowrap"><input type="text" placeholder="— click —" value="${esc(r.delayedDate||'')}" onfocus="dpFocus(this,${i},'delayedDate')" onchange="dpChange(this,${i},'delayedDate')" onblur="dpBlur(this,${i},'delayedDate')" style="cursor:pointer;width:90px">${r.delayedDate?`<button class="iconbtn" onclick="dpClear(${i},'delayedDate')" title="ล้างวัน / Clear">✕</button>`:''}</td>
+      <td class="col-dn" style="white-space:nowrap"><input type="text" placeholder="— click —" value="${esc(r.doneDate||'')}" onfocus="dpFocus(this,${i},'doneDate')" onchange="dpChange(this,${i},'doneDate')" onblur="dpBlur(this,${i},'doneDate')" style="cursor:pointer;width:90px">${r.doneDate?`<button class="iconbtn" onclick="dpClear(${i},'doneDate')" title="ล้างวัน / Clear">✕</button>`:''}</td>
+      <td><select onchange="onOwnerChange(${i},this)">${buildOwnerOpts(r.owner)}</select></td>
+      <td><textarea rows="1" oninput="upd(${i},'notes',this.value);autoG(this)">${esc(r.notes)}</textarea></td>
+      <td class="act">
+        <button class="iconbtn" title="ขึ้น" onclick="move(${i},-1)">▲</button>
+        <button class="iconbtn" title="ลง" onclick="move(${i},1)">▼</button>
+        <button class="iconbtn" title="ลบ" onclick="del(${i})">✕</button>
+      </td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('textarea').forEach(autoG);
+  renderLogoManager();
+  updateShowCount();
+}
+function autoG(t){t.style.height='auto';t.style.height=t.scrollHeight+'px';}
+
+// union of OWNERS (non-empty) and owners used in DATA, de-duped, first-appearance order
+function ownerList(){
+  const seen=new Set(), out=[];
+  OWNERS.forEach(o=>{const k=String(o||'').trim(); if(k&&!seen.has(k)){seen.add(k);out.push(k);}});
+  DATA.forEach(r=>{const k=String(r.owner||'').trim(); if(k&&!seen.has(k)){seen.add(k);out.push(k);}});
+  return out;
+}
+function renderLogoManager(){
+  const host=document.getElementById('logoMgr'); if(!host) return;
+  const owners=ownerList();
+  host.innerHTML='';
+  if(!owners.length){host.innerHTML='<div class="hint">ยังไม่มีผู้รับผิดชอบ — เพิ่มในตารางก่อน / No owners yet.</div>';return;}
+  owners.forEach(name=>{
+    const card=document.createElement('div'); card.className='logo-card';
+    const thumb=document.createElement('div'); thumb.className='logo-thumb';
+    if(LOGOS[name]){const im=document.createElement('img');im.src=LOGOS[name];thumb.appendChild(im);}
+    else thumb.textContent='no logo';
+    const nm=document.createElement('div'); nm.className='logo-name'; nm.textContent=name;
+    const up=document.createElement('button'); up.className='iconbtn'; up.title='อัปโหลด / Upload'; up.textContent='📷';
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.style.display='none';
+    inp.onchange=ev=>{const f=ev.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{LOGOS[name]=rd.result; renderLogoManager(); renderTimeline();}; rd.readAsDataURL(f); ev.target.value='';};
+    up.onclick=()=>inp.click();
+    card.appendChild(thumb); card.appendChild(nm); card.appendChild(up); card.appendChild(inp);
+    const del=document.createElement('button'); del.className='iconbtn';
+    del.title='ลบชื่อ / Delete owner'; del.textContent='🗑';
+    del.onclick=()=>{ if(!confirm('ลบผู้รับผิดชอบ "'+name+'" ? (จะถูกล้างออกจากแถวที่ใช้อยู่)'))return;
+      const oi=OWNERS.indexOf(name); if(oi>=0) OWNERS.splice(oi,1);
+      DATA.forEach(r=>{ if(r.owner===name) r.owner=''; });
+      delete LOGOS[name];
+      renderTable(); renderLogoManager(); renderTimeline(); };
+    card.appendChild(del);
+    if(LOGOS[name]){
+      const rm=document.createElement('button'); rm.className='iconbtn'; rm.title='ลบโลโก้ / Remove'; rm.textContent='✕';
+      rm.onclick=()=>{delete LOGOS[name]; renderLogoManager(); renderTimeline();};
+      card.appendChild(rm);
+    }
+    host.appendChild(card);
+  });
+}
+
+function upd(i,k,v){DATA[i][k]=v;renderTimeline();}
+// date picker <-> internal dd/mm/yyyy. dmyToISO feeds <input type=date>; setDate stores back as dd/mm/yyyy
+function dmyToISO(s){
+  const m=String(s||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(!m) return '';
+  let y=+m[3]; if(y>2500) y-=543; // BE -> CE
+  return y+'-'+String(+m[2]).padStart(2,'0')+'-'+String(+m[1]).padStart(2,'0');
+}
+// ---- date-picker type-switch helpers (blank cell → calendar on click → blank if cancelled) ----
+function dpFocus(el,i,field){
+  // switch to date-picker; pre-fill if a date is already stored
+  const stored=DATA[i][field]||'';
+  el.type='date';
+  el.value=dmyToISO(stored)||'';
+  try{el.showPicker();}catch(e){}
+}
+function dpChange(el,i,field){
+  // user picked a date from the calendar
+  const dmy=isoToDMY(el.value);
+  DATA[i][field]=dmy;
+  el.type='text';
+  el.value=dmy;
+  renderTable();    // re-render table so ✕ button appears and value shows correctly
+  renderTimeline();
+}
+function dpBlur(el,i,field){
+  // user clicked away without picking — revert to text showing stored value (may be blank)
+  if(el.type==='date'){
+    el.type='text';
+    el.value=DATA[i][field]||'';
+  }
+}
+function dpClear(i,field){
+  DATA[i][field]='';
+  renderTable();
+  renderTimeline();
+}
+function isoToDMY(s){
+  const m=String(s||'').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? m[3]+'/'+m[2]+'/'+(+m[1]+543) : ''; // store as dd/mm/yyyy BE
+}
+function setDate(i,iso){ DATA[i].date=isoToDMY(iso); renderTimeline(); }
+function setDateField(i,field,iso){ DATA[i][field]=isoToDMY(iso); renderTimeline(); }
+function migrateDates(){
+  DATA.forEach(r=>{
+    if(r.planDate===undefined && r.delayedDate===undefined && r.doneDate===undefined){
+      const d=r.date||'', s=r.status||'plan';
+      r.planDate = s==='plan'? d : '';
+      r.delayedDate = s==='delayed'? d : '';
+      r.doneDate = s==='done'? d : '';
+    }
+  });
+}
+function addRow(){DATA.push({date:'',desc:'รายการใหม่',planDate:'',delayedDate:'',doneDate:'',owner:'',phase:'',notes:'',show:true,step:''});renderTable();renderTimeline();}
+function toggleShow(i,on){ DATA[i].show=on; renderTimeline(); updateShowCount(); }
+function setShowN(v){ const n=Math.max(0,parseInt(v,10)||0); DATA.forEach((r,i)=>r.show=(i<n)); renderTable(); renderTimeline(); updateShowCount(); }
+function updateShowCount(){
+  const total=DATA.length, shown=DATA.filter(r=>r.show!==false).length;
+  const el=document.getElementById('showCount'); if(el) el.textContent='แสดง '+shown+' / '+total;
+  const n=document.getElementById('showN'); if(n && document.activeElement!==n) n.value=shown;
+}
+function del(i){DATA.splice(i,1);renderTable();renderTimeline();}
+// sort the milestone rows by Step (numeric asc); blank-step rows keep their order at the bottom
+function sortDataByStep(){
+  DATA.sort((a,b)=>{
+    const sa=parseFloat(a.step), sb=parseFloat(b.step);
+    const na=isNaN(sa), nb=isNaN(sb);
+    if(!na&&!nb) return sa-sb;   // both numeric: by Step
+    if(!na&&nb) return -1;        // numeric before blank
+    if(na&&!nb) return 1;
+    return 0;                     // both blank: stable (keep order)
+  });
+}
+// ▲▼ move up/down in Step order: swap Step values with the neighbour (blanks: swap row position)
+function move(i,dir){
+  const j=i+dir; if(j<0||j>=DATA.length) return;
+  const a=DATA[i], b=DATA[j];
+  const sa=parseFloat(a.step), sb=parseFloat(b.step);
+  if(!isNaN(sa)&&!isNaN(sb)){ const t=a.step; a.step=b.step; b.step=t; }
+  else { [DATA[i],DATA[j]]=[DATA[j],DATA[i]]; }
+  renderTable(); renderTimeline();
+}
+// assign Step = 10,20,30… by current table order, so the chart order matches the table (gaps let you hand-insert)
+function renumberSteps(){DATA.forEach((r,i)=>{r.step=(i+1)*10;});renderTable();renderTimeline();}
+
+// ---- select change handlers ----
+function onStatusChange(i,sel){
+  const v=sel.value;
+  if(v==='__add__'){
+    addOption('status',i,sel);
+    return;
+  }
+  DATA[i].status=v;
+  const st=STATUS[v]||STATUS.plan;
+  sel.style.color=st.color;
+  renderTimeline();
+}
+function onOwnerChange(i,sel){
+  const v=sel.value;
+  if(v==='__add__'){addOption('owner',i,sel);return;}
+  DATA[i].owner=v;
+  renderTimeline();
+}
+function onPhaseChange(i,sel){
+  const v=sel.value;
+  if(v==='__add__'){addOption('phase',i,sel);return;}
+  DATA[i].phase=v;
+  renderTimeline();
+}
+
+// ---- addOption ----
+function addOption(kind,i,sel){
+  if(kind==='owner'){
+    const name=(prompt('ชื่อผู้รับผิดชอบใหม่ / New owner name:')||'').trim();
+    if(!name){renderTable();renderTimeline();return;}
+    if(!OWNERS.includes(name)) OWNERS.push(name);
+    DATA[i].owner=name;
+    renderTable();renderTimeline();
+  } else if(kind==='phase'){
+    const name=(prompt('ชื่อเฟสใหม่ / New phase name:')||'').trim();
+    if(!name){renderTable();renderTimeline();return;}
+    if(!PHASES.includes(name)){
+      PHASES.push(name);
+      // pick next unused color from palette
+      const usedColors=Object.values(PHASE_COLORS);
+      const next=PALETTE.find(c=>!usedColors.includes(c))||'#bbb';
+      PHASE_COLORS[name]=next;
+    }
+    DATA[i].phase=name;
+    renderTable();renderTimeline();
+  } else if(kind==='status'){
+    const label=(prompt('ชื่อสถานะใหม่ / New status label:')||'').trim();
+    if(!label){renderTable();renderTimeline();return;}
+    // show color picker modal
+    showSwatchModal(label,i);
+  }
+}
+
+// ---- swatch modal ----
+const SWATCH_COLORS=['#5B8DEF','#2E9E8F','#E0A93B','#7B61FF','#cf3b3b','#3f9142','#9a958c'];
+let _swatchSelected=null;
+let _swatchLabel='';
+let _swatchRowIdx=-1;
+
+function showSwatchModal(label,rowIdx){
+  _swatchLabel=label; _swatchRowIdx=rowIdx; _swatchSelected=null;
+  const row=document.getElementById('swatchRow');
+  row.innerHTML='';
+  SWATCH_COLORS.forEach(c=>{
+    const div=document.createElement('div');
+    div.className='swatch';
+    div.style.background=c;
+    div.title=c;
+    div.onclick=()=>{
+      _swatchSelected=c;
+      row.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+      div.classList.add('selected');
+    };
+    row.appendChild(div);
+  });
+  document.getElementById('swatchTitle').textContent='เลือกสีสำหรับ "'+label+'"';
+  document.getElementById('swatchModal').style.display='flex';
+}
+
+document.getElementById('swatchCancel').onclick=function(){
+  document.getElementById('swatchModal').style.display='none';
+  _swatchSelected=null; _swatchLabel=''; _swatchRowIdx=-1;
+  renderTable(); renderTimeline();
+};
+document.getElementById('swatchConfirm').onclick=function(){
+  if(!_swatchSelected){alert('กรุณาเลือกสี / Please pick a color');return;}
+  const color=_swatchSelected;
+  const bg=tintBg(color);
+  const key=slugify(_swatchLabel);
+  const uniqueKey=STATUS[key]?key+'_'+Date.now():key;
+  STATUS[uniqueKey]={label:_swatchLabel, color:color, bg:bg};
+  DATA[_swatchRowIdx].status=uniqueKey;
+  document.getElementById('swatchModal').style.display='none';
+  _swatchSelected=null; _swatchLabel=''; _swatchRowIdx=-1;
+  renderTable(); renderTimeline();
+};
+
+// ---- lines / wrapText helpers ----
+function lines(text,maxW,fs){
+  const words=String(text||'').split(/\s+/), out=[]; let cur='';
+  const cw=fs*0.56; const max=Math.max(6,Math.floor(maxW/cw));
+  words.forEach(w=>{
+    let t=cur?cur+' '+w:w;
+    while(t.length>max){
+      if(cur){out.push(cur);cur='';t=w;}
+      if(w.length>max){out.push(w.slice(0,max));w=w.slice(max);t=w;}else break;
+    }
+    if(t.length<=max)cur=t; else {if(cur)out.push(cur);cur=w;}
+  });
+  if(cur)out.push(cur);
+  return out.length?out:[''];
+}
+function wrapText(svg,NS,text,x,y,maxW,lh,fill,weight,fs){
+  const ls=lines(text,maxW,fs);
+  ls.forEach((ln,i)=>{
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',x); t.setAttribute('y',y+i*lh);
+    t.setAttribute('font-size',fs); t.setAttribute('fill',fill);
+    t.setAttribute('font-weight',weight);
+    t.setAttribute('font-family','TH Sarabun New,TH SarabunPSK,Sarabun,sans-serif');
+    t.textContent=ln; svg.appendChild(t);
+  });
+  return ls;
+}
+
+// ---- heightFor (group-aware) ----
+function heightFor(g){
+  // g may be a group object (with .entries) or a plain row
+  const boxW=BOXW-22; // inner text width, matches renderer's wrap width (boxW-22)
+  let h=18;
+  const owner=g.owner||'';
+  const desc=g.desc||(g.r&&g.r.desc)||'';
+  if(owner) h+= 18;
+  h+=lines(desc,boxW,12).length*18;
+  // entries (group) or single-row notes
+  if(g.entries){
+    g.entries.forEach(e=>{ h+=20; });
+    if(g.notes) h+=2+lines(g.notes,boxW,12).length*16;
+  } else {
+    if(g.notes||g.r&&g.r.notes){
+      const notes=g.notes||(g.r&&g.r.notes)||'';
+      if(notes) h+=2+lines(notes,boxW,12).length*16;
+    }
+  }
+  return Math.max(48,h+14);
+}
+
+// ---- date label color by status (Plan = BLACK, not gray) ----
+function dateColor(statusKey){
+  if(statusKey==='done') return '#3f9142';
+  if(statusKey==='delayed') return '#cf3b3b';
+  if(statusKey==='plan') return '#1a1a1a';
+  // custom statuses: use their defined color
+  const s=STATUS[statusKey];
+  return (s&&s.color)||'#1a1a1a';
+}
+
+// ---- multi-level interval packing ----
+// Place a box [x0,x1] on the lowest free level for its side. Levels track
+// occupied x-intervals; if every existing level overlaps, open a new one.
+function packLevel(levels,x0,x1,gap){
+  const lo=x0-gap, hi=x1+gap;
+  for(let lvl=0;lvl<levels.length;lvl++){
+    let conflict=false;
+    for(const iv of levels[lvl]){
+      if(lo < iv.hi && hi > iv.lo){conflict=true;break;}
+    }
+    if(!conflict){
+      levels[lvl].push({lo,hi});
+      return lvl;
+    }
+  }
+  // open a new level
+  levels.push([{lo,hi}]);
+  return levels.length-1;
+}
+
+// ---- logo layout constants ----
+const LOGO_RATIO=0.48;   // logo frame height = width * ratio
+const LOGO_DEFW=84;      // default enlarged logo width
+    // ---- timeline spacing ----
+    const BOXW=160;          // fixed, readable box width (independent of dot pitch)
+    let SPACING=90;          // dot pitch in px; live "Spacing" slider (squeeze the timeline)
+
+// ---- 16:9 PowerPoint slide guide (13.33in x 7.5in @ 96dpi ≈ 1280 x 720) ----
+const GUIDE_W=1280, GUIDE_H=720;
+let SHOW_GUIDE=true;
+
+// ---- timeline (SVG, grouped, multi-level staggered) ----
+const NS='http://www.w3.org/2000/svg';
+function renderTimeline(){
+  window._logoPlacements=[]; // {href,x,y,w,h} in content coords, for reliable PNG export
+  const groups=groupedData();
+  const n=groups.length;
+  const COLW=SPACING, padX=Math.max(70, BOXW/2+12);
+  const boxW=BOXW;
+  const axisGap=40;     // gap from axis to first box level
+  const levelGap=14;    // vertical gap between stacked levels
+  const dateBand=26;    // room reserved near axis for the date label
+  const sideGap=10;     // horizontal gap used by interval packing
+  const rowGap=46;      // vertical gap between serpentine rows
+
+  // ---- serpentine: split groups across ROWS stacked horizontal axes ----
+  let R, perRow;
+  if(ROWS==='auto'){
+    const availW=(document.getElementById('tlScroll')||{}).clientWidth||1100;
+    perRow=Math.max(1, Math.floor((availW - padX*2)/COLW)+1);
+    perRow=Math.min(perRow, Math.max(1,n));
+    R=Math.max(1, Math.ceil(n/perRow));
+  }else{
+    R=Math.max(1,Math.min(ROWS,Math.max(1,n)));
+    perRow=Math.max(1,Math.ceil(n/R));
+  }
+  const colsMax=Math.max(1,Math.min(perRow,Math.max(1,n)));
+  const W=padX*2+Math.max(0,colsMax-1)*COLW+(colsMax<=1?COLW:0);
+
+  function bandHeights(arr){
+    const maxH={};
+    arr.forEach(p=>{ maxH[p.lvl]=Math.max(maxH[p.lvl]||0,p.boxH); });
+    return maxH;
+  }
+  function cumOffsets(bands,levelCount){
+    const off=[]; let acc=axisGap+dateBand;
+    for(let l=0;l<levelCount;l++){ off[l]=acc; acc+=(bands[l]||0)+levelGap; }
+    return {off, total:acc};
+  }
+
+  // ---- pass 1: lay out each row independently + measure its vertical extents ----
+  const rowsData=[];
+  for(let r=0;r<R;r++){
+    const slice=groups.slice(r*perRow,(r+1)*perRow);
+    const aboveLevels=[], belowLevels=[];
+    const items=slice.map((g,c)=>{
+      const x=padX+(colsMax<=1?COLW/2:c*COLW);
+      let boxX=x-boxW/2;
+      if(boxX<2) boxX=2;
+      if(boxX+boxW>W-2) boxX=W-2-boxW;
+      const boxH=heightFor(g);
+      const above=c%2===0;
+      const lvl=above? packLevel(aboveLevels,boxX,boxX+boxW,sideGap)
+                     : packLevel(belowLevels,boxX,boxX+boxW,sideGap);
+      return {g,x,boxX,boxH,above,lvl};
+    });
+    const aboveCum=cumOffsets(bandHeights(items.filter(p=>p.above)),aboveLevels.length);
+    const belowCum=cumOffsets(bandHeights(items.filter(p=>!p.above)),belowLevels.length);
+    const logoHead=(LOGO_DEFW*LOGO_RATIO)+6+8; // logo height above a box + gap + margin
+    const topExt=Math.max(120,aboveCum.total)+20+(slice.some(g=>g.owner&&LOGOS[g.owner])?logoHead:0)+16;
+    const botExt=Math.max(120,belowCum.total)+20+16;
+    rowsData.push({items,aboveCum,belowCum,topExt,botExt,axisY:0});
+  }
+  // stack rows vertically: each row's axis sits below the previous row's lower extent
+  let _yCur=0;
+  rowsData.forEach((rd,r)=>{ rd.axisY=_yCur+rd.topExt; _yCur=rd.axisY+rd.botExt+(r<R-1?rowGap:0); });
+  const H=Math.max(160,_yCur);
+  // canvas may be enlarged so the whole 16:9 guide is visible/scrollable
+  let svgW=W, svgH=H;
+  if(SHOW_GUIDE){ svgW=Math.max(W,GUIDE_W); svgH=Math.max(H,GUIDE_H); }
+
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('width',svgW); svg.setAttribute('height',svgH);
+  svg.setAttribute('viewBox',`0 0 ${svgW} ${svgH}`);
+  svg.setAttribute('xmlns',NS);
+  svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+  svg.style.background='#fff';
+  svg.style.touchAction='none'; // let pointer events drive pan/drag
+
+  // single viewport <g> for pan/zoom of the whole chart
+  const viewport=document.createElementNS(NS,'g');
+  viewport.setAttribute('id','viewport');
+  viewport.setAttribute('transform',`translate(${VIEW.panX},${VIEW.panY}) scale(${VIEW.zoom})`);
+  svg.appendChild(viewport);
+
+  // transparent background catcher for pan / dblclick reset (covers whole chart)
+  const bg=document.createElementNS(NS,'rect');
+  bg.setAttribute('id','tlBg');
+  bg.setAttribute('x',-4000); bg.setAttribute('y',-4000);
+  bg.setAttribute('width',W+8000); bg.setAttribute('height',H+8000);
+  bg.setAttribute('fill','transparent');
+  viewport.appendChild(bg);
+
+  // axis x-range for clamping dragged dots
+  const axisMinX=padX-20, axisMaxX=W-padX+20;
+
+  // ---- draw each serpentine row: its own axis line + its boxes ----
+  rowsData.forEach(rd=>{
+    const axisY=rd.axisY, aboveCum=rd.aboveCum, belowCum=rd.belowCum;
+
+    // axis line for this row
+    const ax=document.createElementNS(NS,'line');
+    ax.setAttribute('x1',padX-30); ax.setAttribute('x2',W-padX+30);
+    ax.setAttribute('y1',axisY); ax.setAttribute('y2',axisY);
+    ax.setAttribute('stroke','#c7c2b8'); ax.setAttribute('stroke-width',3);
+    ax.setAttribute('stroke-linecap','round');
+    viewport.appendChild(ax);
+
+    rd.items.forEach(p=>{
+      const {g,boxH,above,lvl}=p;
+    const desc=g.desc;
+    const ov=LAYOUT[desc]||{};
+    const st=STATUS[g.status]||STATUS.plan;
+    // group date label color = group's EARLIEST entry's status color
+    const earliestStatus=(g.entries&&g.entries.length)?g.entries[0].status:g.status;
+
+    // dot x: manual override or auto
+    const dotx=(ov.dotx!=null)?ov.dotx:p.x;
+
+    // auto box position: above boxes grow upward; below boxes grow downward
+    let autoBoxX=p.boxX, autoBoxY, connY;
+    if(above){
+      const off=aboveCum.off[lvl]; // distance axis→box BOTTOM edge
+      const boxBottom=axisY-off;
+      autoBoxY=boxBottom-boxH;
+    } else {
+      const off=belowCum.off[lvl]; // distance axis→box TOP edge
+      autoBoxY=axisY+off;
+    }
+    // apply manual box override
+    const boxX=(ov.bx!=null)?ov.bx:autoBoxX;
+    const boxY=(ov.by!=null)?ov.by:autoBoxY;
+
+    // group <g> wrapper for this milestone box (draggable as a unit)
+    const gb=document.createElementNS(NS,'g');
+    gb.setAttribute('class','tl-box');
+    gb.setAttribute('data-desc',desc);
+    gb.style.cursor='move';
+
+    // ---- connector + dot + date live OUTSIDE the box <g> (anchored to axis) ----
+    // connector (dotted, status colored). Attach point on box = nearest edge to dot,
+    // or manual offset (cdx,cdy) added to box top-left.
+    const att=connectorAttach(boxX,boxY,boxW,boxH,dotx,axisY,ov);
+    const ln=document.createElementNS(NS,'line');
+    ln.setAttribute('class','tl-conn'); ln.setAttribute('data-desc',desc);
+    ln.setAttribute('x1',dotx); ln.setAttribute('y1',axisY);
+    ln.setAttribute('x2',att.x); ln.setAttribute('y2',att.y);
+    ln.setAttribute('stroke',st.color); ln.setAttribute('stroke-width',1.5);
+    ln.setAttribute('stroke-dasharray','3,3');
+    viewport.appendChild(ln);
+
+    // connector handle (small draggable circle at box-attach end)
+    const handle=document.createElementNS(NS,'circle');
+    handle.setAttribute('class','tl-handle'); handle.setAttribute('data-desc',desc);
+    handle.setAttribute('cx',att.x); handle.setAttribute('cy',att.y); handle.setAttribute('r',4);
+    handle.setAttribute('fill','#fff'); handle.setAttribute('stroke',st.color);
+    handle.setAttribute('stroke-width',1.5); handle.style.cursor='crosshair';
+    viewport.appendChild(handle);
+
+    // dot (draggable along axis)
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('class','tl-dot'); c.setAttribute('data-desc',desc);
+    c.setAttribute('cx',dotx); c.setAttribute('cy',axisY); c.setAttribute('r',8);
+    c.setAttribute('fill',st.color); c.setAttribute('stroke','#fff');
+    c.setAttribute('stroke-width',2.5); c.style.cursor='ew-resize';
+    viewport.appendChild(c);
+
+
+    // ---- box content (built at boxX,boxY) ----
+    const innerW=boxW-22;
+    const statusH=g.entries.length*20;            // Plan/Delayed/Done lines sit BELOW the box
+    const borderH=Math.max(40, boxH-statusH);     // the visible box encloses owner+desc+notes only
+    const rect=document.createElementNS(NS,'rect');
+    rect.setAttribute('x',boxX); rect.setAttribute('y',boxY);
+    rect.setAttribute('width',boxW); rect.setAttribute('height',borderH);
+    rect.setAttribute('rx',9); rect.setAttribute('fill',st.bg);
+    rect.setAttribute('stroke',st.color); rect.setAttribute('stroke-width',1.3);
+    gb.appendChild(rect);
+
+    let ty=boxY+20;
+    if(g.owner){
+      const og=document.createElementNS(NS,'text');
+      og.setAttribute('x',boxX+14); og.setAttribute('y',ty);
+      og.setAttribute('font-size','12'); og.setAttribute('font-weight','800');
+      og.setAttribute('fill','#555'); og.setAttribute('letter-spacing','.3');
+      og.setAttribute('font-family','TH Sarabun New,TH SarabunPSK,Sarabun,sans-serif');
+      og.textContent=g.owner.toUpperCase();
+      gb.appendChild(og);
+      ty += 18;
+    }
+    // description (wrapped, once) + notes — inside the box
+    const descLines=wrapText(gb,NS,g.desc,boxX+14,ty,innerW,16,'#1a1a1a',600,12);
+    ty+=descLines.length*18;
+    if(g.notes){
+      ty+=2;
+      const noteLines=wrapText(gb,NS,g.notes,boxX+14,ty,innerW,16,'#888',400,12);
+      ty+=noteLines.length*16;
+    }
+
+    // ---- Plan date / Delayed / Done — listed BELOW the box, colored by status ----
+    let sy=boxY+borderH+14;
+    g.entries.forEach(e=>{
+      const est=STATUS[e.status]||STATUS.plan;
+      const etEl=document.createElementNS(NS,'text');
+      etEl.setAttribute('x',boxX+boxW/2); etEl.setAttribute('text-anchor','middle');
+      etEl.setAttribute('y',sy); etEl.setAttribute('font-size','12'); etEl.setAttribute('fill',dateColor(e.status));
+      etEl.setAttribute('font-weight','700');
+      etEl.setAttribute('font-family','TH Sarabun New,TH SarabunPSK,Sarabun,sans-serif');
+      etEl.textContent=(e.date?fmtDisplay(e.date):'—');
+      gb.appendChild(etEl); sy+=20;
+    });
+
+    // meeting date at the DOT (on the axis line), follows the dot when dragged
+    const dlEl=document.createElementNS(NS,'text');
+    dlEl.setAttribute('class','tl-date'); dlEl.setAttribute('data-desc',desc);
+    dlEl.setAttribute('x',dotx); dlEl.setAttribute('y',above?axisY+20:axisY-12);
+    dlEl.setAttribute('text-anchor','middle'); dlEl.setAttribute('font-size','12');
+    dlEl.setAttribute('font-weight','700'); dlEl.setAttribute('fill','#1a1a1a');
+    dlEl.setAttribute('font-family','TH Sarabun New,TH SarabunPSK,Sarabun,sans-serif');
+    dlEl.textContent=fmtDisplay(g.sortDateStr)||'—';
+    viewport.appendChild(dlEl);
+
+    viewport.appendChild(gb);
+
+    // ---- company logo: enlarged, ABOVE the box, draggable + resizable ----
+    if(g.owner && LOGOS[g.owner]){
+      const logoW=(ov.logoW!=null)?ov.logoW:LOGO_DEFW;
+      const logoH=logoW*LOGO_RATIO;
+      const defLogoX=boxX+boxW/2-logoW/2;
+      const defLogoY=boxY-logoH-6;
+      const logoX=defLogoX+(ov.logoDx||0);
+      const logoY=defLogoY+(ov.logoDy||0);
+      const im=document.createElementNS(NS,'image');
+      im.setAttribute('class','tl-logo'); im.setAttribute('data-desc',desc);
+      im.setAttribute('href',LOGOS[g.owner]);
+      im.setAttributeNS('http://www.w3.org/1999/xlink','href',LOGOS[g.owner]);
+      im.setAttribute('x',logoX); im.setAttribute('y',logoY);
+      im.setAttribute('width',logoW); im.setAttribute('height',logoH);
+      im.setAttribute('preserveAspectRatio','xMidYMid meet');
+      im.style.cursor='move';
+      viewport.appendChild(im);
+      // resize handle at bottom-right corner of the logo frame
+      const rh=document.createElementNS(NS,'rect');
+      rh.setAttribute('class','tl-logoresize'); rh.setAttribute('data-desc',desc);
+      rh.setAttribute('x',logoX+logoW-7); rh.setAttribute('y',logoY+logoH-7);
+      rh.setAttribute('width',9); rh.setAttribute('height',9);
+      rh.setAttribute('rx',2); rh.setAttribute('fill','transparent');
+      rh.setAttribute('stroke','none'); rh.setAttribute('stroke-width',1);
+      rh.style.cursor='nwse-resize';
+      viewport.appendChild(rh);
+      // record for PNG export (canvas overdraw aspect-fits)
+      window._logoPlacements.push({href:LOGOS[g.owner],x:logoX,y:logoY,w:logoW,h:logoH});
+    }
+
+    // remember geometry for live drag updates (in content coords)
+    gb._geo={boxX,boxY,boxW,boxH,dotx,axisY,desc};
+    });
+  });
+
+  // ---- 16:9 slide guide (dashed outline; squeeze content to fit inside it) ----
+  if(SHOW_GUIDE){
+    const gr=document.createElementNS(NS,'rect');
+    gr.setAttribute('id','slideGuide');
+    gr.setAttribute('x',0); gr.setAttribute('y',0);
+    gr.setAttribute('width',GUIDE_W); gr.setAttribute('height',GUIDE_H);
+    gr.setAttribute('fill','none'); gr.setAttribute('stroke','#d23b3b');
+    gr.setAttribute('stroke-width',1.5); gr.setAttribute('stroke-dasharray','10,7');
+    gr.setAttribute('pointer-events','none');
+    viewport.appendChild(gr);
+    const gl=document.createElementNS(NS,'text');
+    gl.setAttribute('id','slideGuideLabel');
+    gl.setAttribute('x',6); gl.setAttribute('y',16);
+    gl.setAttribute('font-size','12'); gl.setAttribute('fill','#d23b3b');
+    gl.setAttribute('font-weight','700'); gl.setAttribute('pointer-events','none');
+    gl.setAttribute('font-family','TH Sarabun New,TH SarabunPSK,Sarabun,sans-serif');
+    gl.textContent='16:9 slide ('+GUIDE_W+'×'+GUIDE_H+') — บีบให้พอดีกรอบ';
+    viewport.appendChild(gl);
+  }
+
+  const holder=document.getElementById('tlScroll');
+  holder.innerHTML=''; holder.appendChild(svg);
+  window._lastSVG=svg; window._svgDims={W,H};
+  window._tlState={axisY:(rowsData[0]?rowsData[0].axisY:0),axisMinX,axisMaxX,boxW,W,H};
+  attachDragHandlers(svg);
+  renderStatusLegend();
+}
+
+// connector attach point on the box: manual offset (cdx,cdy) from box top-left,
+// else the box edge nearest the dot.
+function connectorAttach(boxX,boxY,boxW,boxH,dotx,axisY,ov){
+  if(ov && ov.cdx!=null && ov.cdy!=null){
+    return {x:boxX+ov.cdx, y:boxY+ov.cdy};
+  }
+  // nearest edge: clamp dot x to box x-range for the horizontal attach,
+  // attach to the box's near vertical edge (bottom if box above axis, top if below)
+  const cx=Math.max(boxX, Math.min(dotx, boxX+boxW));
+  const cy=(boxY+boxH/2 < axisY) ? boxY+boxH : boxY; // bottom edge if above, top edge if below
+  return {x:cx, y:cy};
+}
+
+function renderPhaseLegend(){
+  const used=[...new Set(DATA.map(r=>r.phase).filter(Boolean))];
+  document.getElementById('phaseLegend').innerHTML=used.map(p=>
+    `<span style="margin-right:12px"><i class="lg-dot" style="background:${PHASE_COLORS[p]||'#bbb'}"></i>${esc(p)}</span>`
+  ).join('');
+}
+function renderStatusLegend(){
+  const el=document.getElementById('statusLegend');
+  if(!el) return;
+  el.innerHTML=Object.keys(STATUS).map(k=>{
+    const s=STATUS[k];
+    return `<span style="margin-right:12px"><i class="lg-dot" style="background:${esc(s.color)}"></i>${esc(s.label)}</span>`;
+  }).join('');
+}
+
+// ---- pointer -> content coordinates ----
+// Map a pointer event to SVG user units, then undo the viewport (pan/zoom) transform.
+function eventToContent(svg,e){
+  const p=svg.createSVGPoint();
+  p.x=e.clientX; p.y=e.clientY;
+  const ctm=svg.getScreenCTM();
+  if(!ctm) return {x:0,y:0};
+  const u=p.matrixTransform(ctm.inverse()); // SVG user units (viewBox space)
+  // subtract viewport transform: content = (user - pan) / zoom
+  return { x:(u.x-VIEW.panX)/VIEW.zoom, y:(u.y-VIEW.panY)/VIEW.zoom };
+}
+
+// ---- drag interactivity (boxes, dots, connector handles, pan, wheel-zoom) ----
+let _drag=null; // {kind, desc, grabDX, grabDY, geo, ...}
+
+function attachDragHandlers(svg){
+  const tlState=window._tlState;
+
+  function findBoxGroup(target){
+    let el=target;
+    while(el && el!==svg){
+      if(el.classList && el.classList.contains('tl-box')) return el;
+      el=el.parentNode;
+    }
+    return null;
+  }
+
+  svg.addEventListener('pointerdown',e=>{
+    const t=e.target;
+    const cls=t.classList;
+    const content=eventToContent(svg,e);
+
+    // 1) dot drag
+    if(cls && cls.contains('tl-dot')){
+      const desc=t.getAttribute('data-desc');
+      _drag={kind:'dot',desc,el:t};
+      svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    // 2) connector handle drag
+    if(cls && cls.contains('tl-handle')){
+      const desc=t.getAttribute('data-desc');
+      const gb=[...svg.querySelectorAll('.tl-box')].find(b=>b.getAttribute('data-desc')===desc);
+      const geo=gb&&gb._geo;
+      _drag={kind:'handle',desc,el:t,geo,
+        grabDX:content.x-parseFloat(t.getAttribute('cx')),
+        grabDY:content.y-parseFloat(t.getAttribute('cy'))};
+      svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    // 3a) logo drag
+    if(cls && cls.contains('tl-logo')){
+      const desc=t.getAttribute('data-desc');
+      _drag={kind:'logo',desc,el:t,
+        grabDX:content.x-parseFloat(t.getAttribute('x')),
+        grabDY:content.y-parseFloat(t.getAttribute('y'))};
+      svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    // 3b) logo resize
+    if(cls && cls.contains('tl-logoresize')){
+      const desc=t.getAttribute('data-desc');
+      _drag={kind:'logoresize',desc,el:t};
+      svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    // 3) box drag
+    const gb=findBoxGroup(t);
+    if(gb){
+      const geo=gb._geo;
+      _drag={kind:'box',desc:gb.getAttribute('data-desc'),el:gb,geo,
+        grabDX:content.x-geo.boxX, grabDY:content.y-geo.boxY};
+      svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    // 4) pan (empty background)
+    _drag={kind:'pan',startX:e.clientX,startY:e.clientY,panX0:VIEW.panX,panY0:VIEW.panY};
+    svg.setPointerCapture(e.pointerId);
+  });
+
+  svg.addEventListener('pointermove',e=>{
+    if(!_drag) return;
+    if(_drag.kind==='pan'){
+      // pan in user units: screen delta scaled by viewBox/screen ratio
+      const ctm=svg.getScreenCTM(); if(!ctm) return;
+      const sx=ctm.a||1, sy=ctm.d||1; // screen px per user unit
+      VIEW.panX=_drag.panX0+(e.clientX-_drag.startX)/sx;
+      VIEW.panY=_drag.panY0+(e.clientY-_drag.startY)/sy;
+      const vp=svg.querySelector('#viewport');
+      if(vp) vp.setAttribute('transform',`translate(${VIEW.panX},${VIEW.panY}) scale(${VIEW.zoom})`);
+      return;
+    }
+    const content=eventToContent(svg,e);
+
+    if(_drag.kind==='dot'){
+      let nx=content.x;
+      nx=Math.max(tlState.axisMinX,Math.min(nx,tlState.axisMaxX));
+      LAYOUT[_drag.desc]=LAYOUT[_drag.desc]||{};
+      LAYOUT[_drag.desc].dotx=nx;
+      liveUpdateDot(svg,_drag.desc,nx);
+      return;
+    }
+    if(_drag.kind==='handle'){
+      const geo=_drag.geo; if(!geo) return;
+      const ax=content.x-_drag.grabDX, ay=content.y-_drag.grabDY;
+      LAYOUT[_drag.desc]=LAYOUT[_drag.desc]||{};
+      LAYOUT[_drag.desc].cdx=ax-geo.boxX;
+      LAYOUT[_drag.desc].cdy=ay-geo.boxY;
+      liveUpdateConnector(svg,_drag.desc);
+      return;
+    }
+    if(_drag.kind==='box'){
+      const nx=content.x-_drag.grabDX, ny=content.y-_drag.grabDY;
+      LAYOUT[_drag.desc]=LAYOUT[_drag.desc]||{};
+      LAYOUT[_drag.desc].bx=nx;
+      LAYOUT[_drag.desc].by=ny;
+      liveUpdateBox(svg,_drag.desc,nx,ny);
+      return;
+    }
+    if(_drag.kind==='logo'){
+      const nx=content.x-_drag.grabDX, ny=content.y-_drag.grabDY;
+      const im=[...svg.querySelectorAll('.tl-logo')].find(b=>b.getAttribute('data-desc')===_drag.desc);
+      if(!im) return;
+      LAYOUT[_drag.desc]=LAYOUT[_drag.desc]||{};
+      LAYOUT[_drag.desc].logoDx=(LAYOUT[_drag.desc].logoDx||0)+(nx-parseFloat(im.getAttribute('x')));
+      LAYOUT[_drag.desc].logoDy=(LAYOUT[_drag.desc].logoDy||0)+(ny-parseFloat(im.getAttribute('y')));
+      liveMoveLogo(svg,_drag.desc,nx,ny);
+      return;
+    }
+    if(_drag.kind==='logoresize'){
+      const im=[...svg.querySelectorAll('.tl-logo')].find(b=>b.getAttribute('data-desc')===_drag.desc);
+      if(!im) return;
+      const lx=parseFloat(im.getAttribute('x'));
+      let nw=content.x-lx; nw=Math.max(24,Math.min(400,nw));
+      LAYOUT[_drag.desc]=LAYOUT[_drag.desc]||{};
+      LAYOUT[_drag.desc].logoW=nw;
+      liveResizeLogo(svg,_drag.desc,nw);
+      return;
+    }
+  });
+
+  svg.addEventListener('pointerup',e=>{
+    if(_drag){ try{svg.releasePointerCapture(e.pointerId);}catch(_){} }
+    _drag=null;
+  });
+  svg.addEventListener('pointercancel',()=>{_drag=null;});
+
+  // double-click empty background => reset VIEW only
+  svg.addEventListener('dblclick',e=>{
+    if(e.target.id==='tlBg'){
+      VIEW={panX:0,panY:0,zoom:1};
+      const vp=svg.querySelector('#viewport');
+      if(vp) vp.setAttribute('transform','translate(0,0) scale(1)');
+    }
+  });
+
+  // wheel zoom toward cursor (clamp 0.4–3)
+  svg.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const u=(function(){
+      const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY;
+      const ctm=svg.getScreenCTM(); if(!ctm) return null;
+      return p.matrixTransform(ctm.inverse());
+    })();
+    if(!u) return;
+    const old=VIEW.zoom;
+    let nz=old*(e.deltaY<0?1.1:1/1.1);
+    nz=Math.max(0.4,Math.min(3,nz));
+    // keep the point under cursor fixed: pan' = u - (u - pan)*nz/old
+    VIEW.panX=u.x-(u.x-VIEW.panX)*nz/old;
+    VIEW.panY=u.y-(u.y-VIEW.panY)*nz/old;
+    VIEW.zoom=nz;
+    const vp=svg.querySelector('#viewport');
+    if(vp) vp.setAttribute('transform',`translate(${VIEW.panX},${VIEW.panY}) scale(${VIEW.zoom})`);
+  },{passive:false});
+}
+
+// ---- live element updates during drag (avoid full re-render) ----
+function liveUpdateBox(svg,desc,nx,ny){
+  const gb=[...svg.querySelectorAll('.tl-box')].find(b=>b.getAttribute('data-desc')===desc);
+  if(!gb) return;
+  const geo=gb._geo;
+  const dx=nx-geo.boxX, dy=ny-geo.boxY;
+  gb.setAttribute('transform',`translate(${dx},${dy})`);
+  // update stored absolute geo for connector math
+  gb._liveBox={boxX:nx,boxY:ny};
+  liveUpdateConnector(svg,desc);
+  // move the logo + handle with the box
+  const lim=[...svg.querySelectorAll('.tl-logo')].find(b=>b.getAttribute('data-desc')===desc);
+  const lrh=[...svg.querySelectorAll('.tl-logoresize')].find(b=>b.getAttribute('data-desc')===desc);
+  if(lim){
+    if(lim._baseX==null){ lim._baseX=parseFloat(lim.getAttribute('x')); lim._baseY=parseFloat(lim.getAttribute('y')); }
+    lim.setAttribute('x',lim._baseX+dx); lim.setAttribute('y',lim._baseY+dy);
+    if(lrh){ const w=parseFloat(lim.getAttribute('width')),h=parseFloat(lim.getAttribute('height'));
+      lrh.setAttribute('x',lim._baseX+dx+w-7); lrh.setAttribute('y',lim._baseY+dy+h-7); }
+  }
+}
+function liveUpdateDot(svg,desc,nx){
+  const dot=[...svg.querySelectorAll('.tl-dot')].find(b=>b.getAttribute('data-desc')===desc);
+  const date=[...svg.querySelectorAll('.tl-date')].find(b=>b.getAttribute('data-desc')===desc);
+  if(dot) dot.setAttribute('cx',nx);
+  if(date) date.setAttribute('x',nx); // meeting date sits at the dot
+  liveUpdateConnector(svg,desc);
+}
+function liveUpdateConnector(svg,desc){
+  const gb=[...svg.querySelectorAll('.tl-box')].find(b=>b.getAttribute('data-desc')===desc);
+  const ln=[...svg.querySelectorAll('.tl-conn')].find(b=>b.getAttribute('data-desc')===desc);
+  const handle=[...svg.querySelectorAll('.tl-handle')].find(b=>b.getAttribute('data-desc')===desc);
+  const dot=[...svg.querySelectorAll('.tl-dot')].find(b=>b.getAttribute('data-desc')===desc);
+  if(!gb||!ln) return;
+  const geo=gb._geo;
+  const lb=gb._liveBox||{boxX:geo.boxX,boxY:geo.boxY};
+  const dotx=dot?parseFloat(dot.getAttribute('cx')):geo.dotx;
+  const att=connectorAttach(lb.boxX,lb.boxY,geo.boxW,geo.boxH,dotx,geo.axisY,LAYOUT[desc]||{});
+  ln.setAttribute('x1',dotx); ln.setAttribute('y1',geo.axisY);
+  ln.setAttribute('x2',att.x); ln.setAttribute('y2',att.y);
+  if(handle){ handle.setAttribute('cx',att.x); handle.setAttribute('cy',att.y); }
+}
+
+function liveMoveLogo(svg,desc,nx,ny){
+  const im=[...svg.querySelectorAll('.tl-logo')].find(b=>b.getAttribute('data-desc')===desc);
+  const rh=[...svg.querySelectorAll('.tl-logoresize')].find(b=>b.getAttribute('data-desc')===desc);
+  if(!im) return;
+  const w=parseFloat(im.getAttribute('width')), h=parseFloat(im.getAttribute('height'));
+  im.setAttribute('x',nx); im.setAttribute('y',ny);
+  if(rh){ rh.setAttribute('x',nx+w-7); rh.setAttribute('y',ny+h-7); }
+}
+function liveResizeLogo(svg,desc,nw){
+  const im=[...svg.querySelectorAll('.tl-logo')].find(b=>b.getAttribute('data-desc')===desc);
+  const rh=[...svg.querySelectorAll('.tl-logoresize')].find(b=>b.getAttribute('data-desc')===desc);
+  if(!im) return;
+  const nh=nw*0.48; // LOGO_RATIO
+  const x=parseFloat(im.getAttribute('x')), y=parseFloat(im.getAttribute('y'));
+  im.setAttribute('width',nw); im.setAttribute('height',nh);
+  if(rh){ rh.setAttribute('x',x+nw-7); rh.setAttribute('y',y+nh-7); }
+}
+
+// ---- reset layout ----
+function resetLayout(){
+  LAYOUT={};
+  VIEW={panX:0,panY:0,zoom:1};
+  renderTimeline();
+}
+
+// ---- serpentine row count ----
+function setRows(v){
+  ROWS=(v==='auto')?'auto':Math.max(1,Math.min(6,parseInt(v,10)||1)); renderTimeline();
+}
+function setSpacing(v){
+  SPACING=Math.max(30,Math.min(260,parseInt(v,10)||90));
+  syncSpacingControls();
+  renderTimeline();
+}
+function syncSpacingControls(){
+  const r=document.getElementById('spacingSel'); if(r) r.value=SPACING;
+  const nm=document.getElementById('spacingNum'); if(nm && document.activeElement!==nm) nm.value=SPACING;
+  const lab=document.getElementById('spacingVal'); if(lab) lab.textContent=SPACING+'px';
+}
+function toggleGuide(){
+  SHOW_GUIDE=!SHOW_GUIDE;
+  const b=document.getElementById('guideBtn');
+  if(b) b.textContent='⊞ กรอบ 16:9 / Guide: '+(SHOW_GUIDE?'ON':'OFF');
+  renderTimeline();
+}
+// auto-pick row count + spacing so the chart fits inside one 16:9 slide (text stays real size)
+function fitToSlide(){
+  const n=groupedData().length||1;
+  const padXc=Math.max(70, BOXW/2+12);
+  let best=null;
+  for(let R=1;R<=6;R++){
+    const perRow=Math.ceil(n/R);
+    let sp=(perRow>1)?(GUIDE_W-padXc*2)/(perRow-1):180;
+    sp=Math.max(30,Math.min(260,Math.round(sp)));
+    ROWS=R; SPACING=sp;
+    renderTimeline();
+    const d=window._svgDims||{W:0,H:0};
+    const overW=Math.max(0,d.W-GUIDE_W), overH=Math.max(0,d.H-GUIDE_H);
+    const fits=(overW<=2 && overH<=2);
+    const score=(fits?0:1e6)+overW*4+overH*8+Math.abs(GUIDE_H-d.H)+Math.abs(GUIDE_W-d.W)*0.2;
+    if(!best||score<best.score) best={R,sp,score};
+  }
+  ROWS=best.R; SPACING=best.sp;
+  const rs=document.getElementById('rowsSel'); if(rs) rs.value=ROWS;
+  syncSpacingControls();
+  renderTimeline();
+}
+
+// ---- save/load (extended shape) ----
+function saveJSON(){
+  const payload={
+    title: document.getElementById('title').textContent,
+    milestones: DATA,
+    owners: OWNERS,
+    phases: PHASES,
+    statuses: STATUS,
+    phaseColors: PHASE_COLORS,
+    logos: LOGOS,
+    rows: ROWS,
+        spacing: SPACING,
+    layout: LAYOUT,
+    view: VIEW
+  };
+  dl(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),'project_timeline.json');
+}
+function loadJSON(e){
+  const f=e.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{try{
+    const j=JSON.parse(rd.result);
+    // accept bare array (legacy), {title,milestones} (old), or new full shape
+    if(Array.isArray(j)){
+      DATA=j;
+      // legacy files have no layout/view/logos; reset to defaults
+      LAYOUT={}; VIEW={panX:0,panY:0,zoom:1}; LOGOS={};
+    } else {
+      if(j.title) document.getElementById('title').textContent=j.title;
+      DATA=j.milestones||[];
+      // restore manual layout overrides + pan/zoom (default when absent)
+      LAYOUT=(j.layout&&typeof j.layout==='object')?j.layout:{};
+      VIEW=(j.view&&typeof j.view==='object')
+        ?{panX:+j.view.panX||0,panY:+j.view.panY||0,zoom:+j.view.zoom||1}
+        :{panX:0,panY:0,zoom:1};
+      // merge owners
+      if(Array.isArray(j.owners)){
+        j.owners.forEach(o=>{if(!OWNERS.includes(o))OWNERS.push(o);});
+      }
+      // merge phases + colors
+      if(Array.isArray(j.phases)){
+        j.phases.forEach(p=>{
+          if(!PHASES.includes(p)&&p){
+            PHASES.push(p);
+            if(!PHASE_COLORS[p]){
+              const usedColors=Object.values(PHASE_COLORS);
+              PHASE_COLORS[p]=PALETTE.find(c=>!usedColors.includes(c))||'#bbb';
+            }
+          }
+        });
+      }
+      if(j.phaseColors&&typeof j.phaseColors==='object'){
+        Object.assign(PHASE_COLORS,j.phaseColors);
+      }
+      // merge statuses
+      if(j.statuses&&typeof j.statuses==='object'){
+        Object.assign(STATUS,j.statuses);
+      }
+      // restore logos (owner -> data URI)
+      LOGOS=(j.logos&&typeof j.logos==='object')?j.logos:{};
+      // restore serpentine row count + sync the selector
+      ROWS=(j.rows==='auto'||j.rows==null)?'auto':Math.min(6,+j.rows);
+      { const rs=document.getElementById('rowsSel'); if(rs) rs.value=ROWS; }
+      SPACING=(+j.spacing>=30)?Math.min(260,+j.spacing):90;
+      syncSpacingControls();
+    }
+    migrateDates(); renderTable(); renderTimeline();
+  }catch(err){alert('ไฟล์ไม่ถูกต้อง: '+err.message);}};
+  rd.readAsText(f); e.target.value='';
+}
+
+// ---- export PNG (true 16:9 PowerPoint slide: 1920x1080) ----
+// Measures the REAL drawn bounds (getBBox) so nothing is cut off, then letterboxes
+// that content (aspect-fit, centered, white margins) into an exact 1920x1080 frame.
+function exportPNG(){
+  const svgEl=window._lastSVG; if(!svgEl){alert('ยังไม่มีไทม์ไลน์ / No chart yet');return;}
+  const vp=svgEl.querySelector('#viewport');
+  if(!vp){alert('ยังไม่มีไทม์ไลน์ / No chart yet');return;}
+
+  // measure content bounds with the huge pan-catcher + 16:9 guide hidden
+  const hideIds=['tlBg','slideGuide','slideGuideLabel'];
+  const saved=[];
+  hideIds.forEach(id=>{ const el=svgEl.querySelector('#'+id); if(el){ saved.push([el,el.style.display]); el.style.display='none'; } });
+  let bb; try{ bb=vp.getBBox(); }catch(e){ bb=null; }
+  saved.forEach(([el,d])=>{ el.style.display=d; });
+  if(!bb||!bb.width||!bb.height){ const d=window._svgDims||{W:1280,H:720}; bb={x:0,y:0,width:d.W,height:d.H}; }
+  const pad=24;
+  const cx=bb.x-pad, cy=bb.y-pad, cw=Math.max(1,bb.width+pad*2), ch=Math.max(1,bb.height+pad*2);
+
+  const clone=svgEl.cloneNode(true);
+  const cvp=clone.querySelector('#viewport');
+  if(cvp) cvp.setAttribute('transform','translate(0,0) scale(1)');
+  // drop the guide + nested logos from the vector layer (logos painted onto canvas after)
+  ['slideGuide','slideGuideLabel'].forEach(id=>{ const el=clone.querySelector('#'+id); if(el) el.remove(); });
+  clone.querySelectorAll('image').forEach(im=>im.remove());
+  clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  clone.setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink');
+  clone.setAttribute('width',cw); clone.setAttribute('height',ch);
+  clone.setAttribute('viewBox',cx+' '+cy+' '+cw+' '+ch);
+  clone.removeAttribute('style');
+  // opaque white background baked in (covers exactly the cropped content box)
+  const bgRect=document.createElementNS(NS,'rect');
+  bgRect.setAttribute('x',cx); bgRect.setAttribute('y',cy);
+  bgRect.setAttribute('width',cw); bgRect.setAttribute('height',ch);
+  bgRect.setAttribute('fill','#ffffff');
+  clone.insertBefore(bgRect,clone.firstChild);
+
+  const data=new XMLSerializer().serializeToString(clone);
+  const svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(data);
+
+  // exact 16:9 output; aspect-fit the content (no text stretching, full content kept)
+  const targetW=1920, targetH=1080;
+  const ar=cw/ch, tar=targetW/targetH;
+  let dw,dh;
+  if(ar>tar){ dw=targetW; dh=targetW/ar; } else { dh=targetH; dw=targetH*ar; }
+  const ox=(targetW-dw)/2, oy=(targetH-dh)/2;
+  const sc=dw/cw; // content-units -> canvas-px
+
+  const img=new Image();
+  img.onload=()=>{
+    const cv=document.createElement('canvas');
+    cv.width=targetW; cv.height=targetH;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,targetW,targetH);
+    ctx.drawImage(img, ox, oy, dw, dh);
+
+    const placements=(window._logoPlacements||[]);
+    const finish=()=>cv.toBlob(b=>{ if(b){dl(b,'project_timeline_16x9.png');} else {alert('Export ไม่สำเร็จ / Export failed');} });
+    if(!placements.length){ finish(); return; }
+    let pending=placements.length;
+    placements.forEach(pl=>{
+      const lim=new Image();
+      lim.onload=()=>{
+        const bx=ox+(pl.x-cx)*sc, by=oy+(pl.y-cy)*sc, bw=pl.w*sc, bh=pl.h*sc;
+        const a=(lim.naturalWidth||1)/(lim.naturalHeight||1);
+        let lw=bw, lh=bw/a;
+        if(lh>bh){ lh=bh; lw=bh*a; }
+        ctx.drawImage(lim, bx, by+(bh-lh)/2, lw, lh);
+        if(--pending===0) finish();
+      };
+      lim.onerror=()=>{ if(--pending===0) finish(); };
+      lim.src=pl.href;
+    });
+  };
+  img.onerror=()=>{alert('Export PNG ไม่สำเร็จ (โหลดภาพไม่ได้) / image failed to load');};
+  img.src=svgUrl;
+}
+function dl(blob,name){
+  const u=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
+}
+
+// ---- debounced resize re-flow ----
+let _rzT; window.addEventListener('resize',()=>{ clearTimeout(_rzT); _rzT=setTimeout(()=>renderTimeline(),150); });
+
+// ---- init ----
+syncSpacingControls();
+renderTable();
+renderTimeline();
+</script>
+</body>
+</html>
