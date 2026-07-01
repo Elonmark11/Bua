@@ -24,35 +24,35 @@
     --planbg:#F1EFE8; --donebg:#EAF3DE; --delaybg:#FCEBEB;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Sarabun','TH Sarabun New','TH SarabunPSK',sans-serif;font-size:12px;background:var(--bg);color:var(--ink);padding:1.5rem;line-height:1.45}
+  body{font-family:'Sarabun','TH Sarabun New','TH SarabunPSK',sans-serif;font-size:15px;background:var(--bg);color:var(--ink);padding:1.5rem;line-height:1.45}
   .wrap{max-width:1280px;margin:0 auto}
   h1.title{font-size:22px;font-weight:700;outline:none;border-bottom:2px solid transparent;display:inline-block;padding:2px 4px;border-radius:4px}
   h1.title:focus{border-bottom-color:var(--line);background:#fff}
-  .subtitle{font-size:11px;color:var(--muted);margin:2px 0 1rem 4px}
+  .subtitle{font-size:13px;color:var(--muted);margin:2px 0 1rem 4px}
 
   .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:center}
-  button{font-family:inherit;font-size:12px;font-weight:600;border:.5px solid var(--line);background:#fff;color:#222;padding:7px 13px;border-radius:8px;cursor:pointer;transition:.12s}
+  button{font-family:inherit;font-size:15px;font-weight:600;border:.5px solid var(--line);background:#fff;color:#222;padding:7px 13px;border-radius:8px;cursor:pointer;transition:.12s}
   button:hover{background:#f3f1ec}
   button.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
   button.primary:hover{background:#333}
   .spacer{flex:1}
 
   .panel{background:var(--card);border:.5px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
-  .panel-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:.5px solid var(--line);background:#faf9f6;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;user-select:none}
+  .panel-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:.5px solid var(--line);background:#faf9f6;font-size:13px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;user-select:none}
   .panel-h .chev{transition:.15s;font-size:9px}
   .panel.collapsed .panel-h .chev{transform:rotate(-90deg)}
   .panel.collapsed .panel-b{display:none}
 
-  table{width:100%;border-collapse:collapse;font-size:12px}
-  th{background:#f3f1ec;padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;border-bottom:.5px solid var(--line)}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th{background:#f3f1ec;padding:8px 10px;text-align:left;font-size:13px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;border-bottom:.5px solid var(--line)}
   td{padding:5px 8px;border-bottom:.5px solid #f0ede8;vertical-align:middle}
   tbody tr:hover{background:#faf9f6}
-  td input,td select,td textarea{width:100%;font-family:inherit;font-size:12px;border:.5px solid transparent;background:transparent;border-radius:6px;padding:5px 6px;color:#1a1a1a;resize:none}
+  td input,td select,td textarea{width:100%;font-family:inherit;font-size:15px;border:.5px solid transparent;background:transparent;border-radius:6px;padding:5px 6px;color:#1a1a1a;resize:none}
   td input:hover,td select:hover,td textarea:hover{border-color:#eee}
   td input:focus,td select:focus,td textarea:focus{outline:none;border-color:#bbb;background:#fff}
   td input::placeholder{color:#bbb;font-style:italic}
   td.act{white-space:nowrap;text-align:right}
-  .iconbtn{border:none;background:transparent;cursor:pointer;font-size:13px;padding:3px 5px;border-radius:6px;color:#999;line-height:1}
+  .iconbtn{border:none;background:transparent;cursor:pointer;font-size:15px;padding:3px 5px;border-radius:6px;color:#999;line-height:1}
   .iconbtn:hover{background:#eee;color:#333}
   .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
 
@@ -73,11 +73,11 @@
   .slide-frame svg{
     display:block;
   }
-  .legend{display:flex;gap:18px;align-items:center;margin:10px 6px 2px;font-size:11px;color:#555;flex-wrap:wrap}
+  .legend{display:flex;gap:18px;align-items:center;margin:10px 6px 2px;font-size:13px;color:#555;flex-wrap:wrap}
   .legend span{display:inline-flex;align-items:center;gap:6px}
   .lg-dot{width:11px;height:11px;border-radius:50%;display:inline-block}
 
-  .hint{font-size:10.5px;color:var(--muted);margin:6px 4px}
+  .hint{font-size:13px;color:var(--muted);margin:6px 4px}
   .col-date{width:120px}.col-status{width:120px}.col-owner{width:130px}.col-phase{width:130px}.col-notes{width:200px}.col-act{width:80px}
   .col-pd,.col-dl,.col-dn{width:120px}
   /* logo resize grip: invisible (no icon on the chart) but appears on hover so you can still resize */
@@ -93,21 +93,21 @@
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999}
   .modal-box{background:#fff;border-radius:14px;padding:24px 28px;box-shadow:0 8px 40px rgba(0,0,0,.18);min-width:320px;max-width:90vw}
   .modal-box h3{font-size:14px;font-weight:700;margin-bottom:4px}
-  .modal-box p{font-size:11px;color:#888;margin-bottom:16px}
+  .modal-box p{font-size:13px;color:#888;margin-bottom:16px}
   .swatch-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
   .swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:.1s}
   .swatch:hover{transform:scale(1.15);border-color:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.3)}
   .swatch.selected{border-color:#fff;box-shadow:0 0 0 3px #333}
   .modal-actions{display:flex;gap:10px;justify-content:flex-end}
-  .modal-cancel{font-family:inherit;font-size:12px;padding:7px 16px;border-radius:8px;border:.5px solid var(--line);background:#f3f1ec;cursor:pointer}
-  .modal-confirm{font-family:inherit;font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;cursor:pointer}
+  .modal-cancel{font-family:inherit;font-size:14px;padding:7px 16px;border-radius:8px;border:.5px solid var(--line);background:#f3f1ec;cursor:pointer}
+  .modal-confirm{font-family:inherit;font-size:14px;font-weight:700;padding:7px 16px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;cursor:pointer}
 
   /* logo manager */
   .logo-mgr{display:flex;flex-wrap:wrap;gap:12px;padding:12px 14px}
   .logo-card{display:flex;align-items:center;gap:10px;border:.5px solid var(--line);border-radius:10px;padding:8px 12px;background:#faf9f6;min-width:235px}
   .logo-thumb{width:56px;height:34px;flex:0 0 auto;background:#fff;border:.5px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:8.5px;color:#bbb;overflow:hidden}
   .logo-thumb img{max-width:100%;max-height:100%;object-fit:contain}
-  .logo-name{font-size:12px;font-weight:600;flex:1;word-break:break-word}
+  .logo-name{font-size:14px;font-weight:600;flex:1;word-break:break-word}
 
   /* chart tools sticky bar — floats near the timeline regardless of scroll position */
   .chart-tools{
@@ -117,9 +117,9 @@
     position:sticky;top:8px;z-index:10;
     box-shadow:0 2px 8px rgba(0,0,0,.08);
   }
-  .chart-tools label{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+  .chart-tools label{font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
   .chart-tools select,.chart-tools input[type=number]{
-    font-family:inherit;font-size:12px;padding:5px 7px;
+    font-family:inherit;font-size:15px;padding:5px 7px;
     border-radius:7px;border:.5px solid var(--line);background:#fff
   }
   @media print{
@@ -143,10 +143,10 @@
     <button onclick="document.getElementById('loadFile').click()">📂 โหลด JSON</button>
     <input type="file" id="loadFile" accept="application/json" style="display:none" onchange="loadJSON(event)">
     <button onclick="renumberSteps()">🔢 จัดเลขขั้นตอน / Renumber steps</button>
-    <label style="font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px">แสดงกี่กิจกรรม / Show first:
-      <input type="number" id="showN" min="0" onchange="setShowN(this.value)" style="font-family:inherit;font-size:12px;width:56px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
+    <label style="font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:5px">แสดงกี่กิจกรรม / Show first:
+      <input type="number" id="showN" min="0" onchange="setShowN(this.value)" style="font-family:inherit;font-size:15px;width:56px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
     </label>
-    <span id="showCount" style="font-size:12px;color:#666"></span>
+    <span id="showCount" style="font-size:15px;color:#666"></span>
     <div class="spacer"></div>
     <button onclick="exportPNG()">🖼 Export PNG</button>
     <button onclick="window.print()">🖨 Print / PDF</button>
