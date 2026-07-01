@@ -95,6 +95,19 @@
   .logo-thumb img{max-width:100%;max-height:100%;object-fit:contain}
   .logo-name{font-size:12px;font-weight:600;flex:1;word-break:break-word}
 
+  /* chart tools sticky bar — floats near the timeline regardless of scroll position */
+  .chart-tools{
+    display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+    background:#faf9f6;border:.5px solid var(--line);border-radius:10px;
+    padding:7px 12px;margin-bottom:8px;
+    position:sticky;top:8px;z-index:10;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+  }
+  .chart-tools label{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+  .chart-tools select,.chart-tools input[type=number]{
+    font-family:inherit;font-size:12px;padding:5px 7px;
+    border-radius:7px;border:.5px solid var(--line);background:#fff
+  }
   @media print{
     body{padding:0;background:#fff}
     .toolbar,.panel,.hint,.subtitle,.legend{display:none!important}
@@ -115,23 +128,7 @@
     <button onclick="saveJSON()">💾 บันทึก JSON</button>
     <button onclick="document.getElementById('loadFile').click()">📂 โหลด JSON</button>
     <input type="file" id="loadFile" accept="application/json" style="display:none" onchange="loadJSON(event)">
-    <button onclick="resetLayout()">↺ จัดเรียงใหม่ / Reset layout</button>
     <button onclick="renumberSteps()">🔢 จัดเลขขั้นตอน / Renumber steps</button>
-    <label style="font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px">แถว / Rows:
-      <select id="rowsSel" onchange="setRows(this.value)" style="font-family:inherit;font-size:12px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
-        <option value="auto" selected>Auto</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-      </select>
-    </label>
-    <label style="font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">ระยะห่างจุด / Spacing:
-      <input type="range" id="spacingSel" min="30" max="260" value="90" oninput="setSpacing(this.value)" style="width:120px;vertical-align:middle">
-      <input type="number" id="spacingNum" min="30" max="260" value="90" onchange="setSpacing(this.value)" style="font-family:inherit;font-size:12px;width:56px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
-      <span id="spacingVal" style="color:#666;min-width:34px">90px</span>
-    </label>
-    <button onclick="fitToSlide()" title="จัดให้พอดี 1 สไลด์ 16:9 / Fit to one 16:9 slide">▣ พอดีสไลด์ / Fit 16:9</button>
-    <button id="guideBtn" onclick="toggleGuide()" title="แสดง/ซ่อน กรอบ 16:9">⊞ กรอบ 16:9 / Guide: ON</button>
     <label style="font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px">แสดงกี่กิจกรรม / Show first:
       <input type="number" id="showN" min="0" onchange="setShowN(this.value)" style="font-family:inherit;font-size:12px;width:56px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
     </label>
@@ -182,6 +179,31 @@
   </div>
 
   <div class="hint" id="dragHint">ลากกล่อง/จุด เพื่อย้าย · ลากพื้นหลังเพื่อเลื่อน · ดับเบิลคลิกพื้นหลังเพื่อรีเซ็ตมุมมอง · (drag boxes/dots to move · drag background to pan · double-click background to reset view)</div>
+
+  <!-- chart tools — sticky so they stay visible while scrolling the chart -->
+  <div class="chart-tools">
+    <button onclick="resetLayout()">↺ Reset layout</button>
+    <label>แถว / Rows:
+      <select id="rowsSel" onchange="setRows(this.value)">
+        <option value="auto" selected>Auto</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+    </label>
+    <label>ระยะห่าง / Spacing:
+      <input type="range" id="spacingSel" min="30" max="260" value="90" oninput="setSpacing(this.value)" style="width:100px;vertical-align:middle">
+      <input type="number" id="spacingNum" min="30" max="260" value="90" onchange="setSpacing(this.value)" style="width:52px">
+      <span id="spacingVal" style="color:#666;min-width:34px">90px</span>
+    </label>
+    <button onclick="fitToSlide()" title="จัดให้พอดี 1 สไลด์ 16:9 / Fit to one 16:9 slide">▣ Fit 16:9</button>
+    <button id="guideBtn" onclick="toggleGuide()" title="แสดง/ซ่อน กรอบ 16:9">⊞ Guide: ON</button>
+    <label>ขนาดตัวอักษร / Font size:
+      <input type="number" id="fontSizeSel" min="6" max="32" value="12" onchange="setFontSize(this.value)" style="width:52px">
+      px
+    </label>
+  </div>
+
   <div class="tl-wrap">
     <div class="slide-frame" id="slideFrame">
       <div id="tlScroll" style="width:100%"></div>
@@ -659,19 +681,23 @@ function wrapText(svg,NS,text,x,y,maxW,lh,fill,weight,fs){
 function heightFor(g){
   // g may be a group object (with .entries) or a plain row
   const boxW=BOXW-22; // inner text width, matches renderer's wrap width (boxW-22)
+  const fs=FONT_SIZE;
+  const lhMain=Math.round(fs*1.5);   // desc / owner line height (was 18 at fs=12)
+  const lhNote=Math.round(fs*1.33);  // notes line height (was 16 at fs=12)
+  const lhEntry=Math.round(fs*1.67); // entry (Plan/Delayed/Done) line height (was 20 at fs=12)
   let h=18;
   const owner=g.owner||'';
   const desc=g.desc||(g.r&&g.r.desc)||'';
-  if(owner) h+= 18;
-  h+=lines(desc,boxW,12).length*18;
+  if(owner) h+=lhMain;
+  h+=lines(desc,boxW,fs).length*lhMain;
   // entries (group) or single-row notes
   if(g.entries){
-    g.entries.forEach(e=>{ h+=20; });
-    if(g.notes) h+=2+lines(g.notes,boxW,12).length*16;
+    g.entries.forEach(e=>{ h+=lhEntry; });
+    if(g.notes) h+=2+lines(g.notes,boxW,fs).length*lhNote;
   } else {
     if(g.notes||g.r&&g.r.notes){
       const notes=g.notes||(g.r&&g.r.notes)||'';
-      if(notes) h+=2+lines(notes,boxW,12).length*16;
+      if(notes) h+=2+lines(notes,boxW,fs).length*lhNote;
     }
   }
   return Math.max(48,h+14);
@@ -713,10 +739,12 @@ const LOGO_DEFW=84;      // default enlarged logo width
     // ---- timeline spacing ----
     const BOXW=160;          // fixed, readable box width (independent of dot pitch)
     let SPACING=90;          // dot pitch in px; live "Spacing" slider (squeeze the timeline)
+    let FONT_SIZE=12;        // chart text size in SVG units; editable via font size control
 
 // ---- 16:9 PowerPoint slide guide (13.33in x 7.5in @ 96dpi ≈ 1280 x 720) ----
 const GUIDE_W=1280, GUIDE_H=720;
 let SHOW_GUIDE=true;
+let GUIDE_X=0, GUIDE_Y=0;  // top-left of the draggable 16:9 guide frame (content coords)
 
 // ---- timeline (SVG, grouped, multi-level staggered) ----
 const NS='http://www.w3.org/2000/svg';
@@ -786,7 +814,10 @@ function renderTimeline(){
   const H=Math.max(160,_yCur);
   // canvas may be enlarged so the whole 16:9 guide is visible/scrollable
   let svgW=W, svgH=H;
-  if(SHOW_GUIDE){ svgW=Math.max(W,GUIDE_W); svgH=Math.max(H,GUIDE_H); }
+  if(SHOW_GUIDE){
+    svgW=Math.max(W, Math.max(0,GUIDE_X)+GUIDE_W);
+    svgH=Math.max(H, Math.max(0,GUIDE_Y)+GUIDE_H);
+  }
 
   const svg=document.createElementNS(NS,'svg');
   svg.setAttribute('width',svgW); svg.setAttribute('height',svgH);
@@ -896,24 +927,28 @@ function renderTimeline(){
     rect.setAttribute('stroke',st.color); rect.setAttribute('stroke-width',1.3);
     gb.appendChild(rect);
 
+    const fs=FONT_SIZE;
+    const lhMain=Math.round(fs*1.5);
+    const lhNote=Math.round(fs*1.33);
+    const lhEntry=Math.round(fs*1.67);
     let ty=boxY+20;
     if(g.owner){
       const og=document.createElementNS(NS,'text');
       og.setAttribute('x',boxX+14); og.setAttribute('y',ty);
-      og.setAttribute('font-size','12'); og.setAttribute('font-weight','800');
+      og.setAttribute('font-size',fs); og.setAttribute('font-weight','800');
       og.setAttribute('fill','#555'); og.setAttribute('letter-spacing','.3');
       og.setAttribute('font-family','TH Sarabun New,TH SarabunPSK,Sarabun,sans-serif');
       og.textContent=g.owner.toUpperCase();
       gb.appendChild(og);
-      ty += 18;
+      ty += lhMain;
     }
     // description (wrapped, once) + notes — inside the box
-    const descLines=wrapText(gb,NS,g.desc,boxX+14,ty,innerW,16,'#1a1a1a',600,12);
-    ty+=descLines.length*18;
+    const descLines=wrapText(gb,NS,g.desc,boxX+14,ty,innerW,lhNote,'#1a1a1a',600,fs);
+    ty+=descLines.length*lhMain;
     if(g.notes){
       ty+=2;
-      const noteLines=wrapText(gb,NS,g.notes,boxX+14,ty,innerW,16,'#888',400,12);
-      ty+=noteLines.length*16;
+      const noteLines=wrapText(gb,NS,g.notes,boxX+14,ty,innerW,lhNote,'#888',400,fs);
+      ty+=noteLines.length*lhNote;
     }
 
     // ---- Plan date / Delayed / Done — listed BELOW the box, colored by status ----
@@ -922,18 +957,18 @@ function renderTimeline(){
       const est=STATUS[e.status]||STATUS.plan;
       const etEl=document.createElementNS(NS,'text');
       etEl.setAttribute('x',boxX+boxW/2); etEl.setAttribute('text-anchor','middle');
-      etEl.setAttribute('y',sy); etEl.setAttribute('font-size','12'); etEl.setAttribute('fill',dateColor(e.status));
+      etEl.setAttribute('y',sy); etEl.setAttribute('font-size',fs); etEl.setAttribute('fill',dateColor(e.status));
       etEl.setAttribute('font-weight','700');
       etEl.setAttribute('font-family','TH Sarabun New,TH SarabunPSK,Sarabun,sans-serif');
       etEl.textContent=(e.date?fmtDisplay(e.date):'—');
-      gb.appendChild(etEl); sy+=20;
+      gb.appendChild(etEl); sy+=lhEntry;
     });
 
     // meeting date at the DOT (on the axis line), follows the dot when dragged
     const dlEl=document.createElementNS(NS,'text');
     dlEl.setAttribute('class','tl-date'); dlEl.setAttribute('data-desc',desc);
     dlEl.setAttribute('x',dotx); dlEl.setAttribute('y',above?axisY+20:axisY-12);
-    dlEl.setAttribute('text-anchor','middle'); dlEl.setAttribute('font-size','12');
+    dlEl.setAttribute('text-anchor','middle'); dlEl.setAttribute('font-size',fs);
     dlEl.setAttribute('font-weight','700'); dlEl.setAttribute('fill','#1a1a1a');
     dlEl.setAttribute('font-family','TH Sarabun New,TH SarabunPSK,Sarabun,sans-serif');
     dlEl.textContent=fmtDisplay(g.sortDateStr)||'—';
@@ -976,24 +1011,25 @@ function renderTimeline(){
     });
   });
 
-  // ---- 16:9 slide guide (dashed outline; squeeze content to fit inside it) ----
+  // ---- 16:9 slide guide (draggable dashed frame; drag its border to reframe the export area) ----
   if(SHOW_GUIDE){
     const gr=document.createElementNS(NS,'rect');
     gr.setAttribute('id','slideGuide');
-    gr.setAttribute('x',0); gr.setAttribute('y',0);
+    gr.setAttribute('x',GUIDE_X); gr.setAttribute('y',GUIDE_Y);
     gr.setAttribute('width',GUIDE_W); gr.setAttribute('height',GUIDE_H);
     gr.setAttribute('fill','none'); gr.setAttribute('stroke','#d23b3b');
-    gr.setAttribute('stroke-width',1.5); gr.setAttribute('stroke-dasharray','10,7');
-    gr.setAttribute('pointer-events','none');
-    viewport.appendChild(gr);
+    gr.setAttribute('stroke-width',2); gr.setAttribute('stroke-dasharray','10,7');
+    gr.setAttribute('pointer-events','visibleStroke'); // only border is draggable — interior stays click-through
+    gr.style.cursor='move';
+    svg.appendChild(gr);
     const gl=document.createElementNS(NS,'text');
     gl.setAttribute('id','slideGuideLabel');
-    gl.setAttribute('x',6); gl.setAttribute('y',16);
+    gl.setAttribute('x',GUIDE_X+6); gl.setAttribute('y',GUIDE_Y+16);
     gl.setAttribute('font-size','12'); gl.setAttribute('fill','#d23b3b');
     gl.setAttribute('font-weight','700'); gl.setAttribute('pointer-events','none');
     gl.setAttribute('font-family','TH Sarabun New,TH SarabunPSK,Sarabun,sans-serif');
-    gl.textContent='16:9 slide ('+GUIDE_W+'×'+GUIDE_H+') — บีบให้พอดีกรอบ';
-    viewport.appendChild(gl);
+    gl.textContent='⊞ 16:9 export frame — drag border to reframe';
+    svg.appendChild(gl);
   }
 
   const holder=document.getElementById('tlScroll');
@@ -1042,6 +1078,15 @@ function eventToContent(svg,e){
   const u=p.matrixTransform(ctm.inverse()); // SVG user units (viewBox space)
   // subtract viewport transform: content = (user - pan) / zoom
   return { x:(u.x-VIEW.panX)/VIEW.zoom, y:(u.y-VIEW.panY)/VIEW.zoom };
+}
+// Map a pointer event to SVG user units WITHOUT undoing the viewport transform (screen/user space).
+function eventToUser(svg,e){
+  const p=svg.createSVGPoint();
+  p.x=e.clientX; p.y=e.clientY;
+  const ctm=svg.getScreenCTM();
+  if(!ctm) return {x:0,y:0};
+  const u=p.matrixTransform(ctm.inverse());
+  return {x:u.x, y:u.y};
 }
 
 // ---- drag interactivity (boxes, dots, connector handles, pan, wheel-zoom) ----
@@ -1102,7 +1147,13 @@ function attachDragHandlers(svg){
         grabDX:content.x-geo.boxX, grabDY:content.y-geo.boxY};
       svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
     }
-    // 4) pan (empty background)
+    // 4) guide frame drag (grab the dashed border)
+    if(t.id==='slideGuide'){
+      const u=eventToUser(svg,e);
+      _drag={kind:'guide',grabDX:u.x-GUIDE_X,grabDY:u.y-GUIDE_Y};
+      svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    // 5) pan (empty background)
     _drag={kind:'pan',startX:e.clientX,startY:e.clientY,panX0:VIEW.panX,panY0:VIEW.panY};
     svg.setPointerCapture(e.pointerId);
   });
@@ -1166,6 +1217,25 @@ function attachDragHandlers(svg){
       liveResizeLogo(svg,_drag.desc,nw);
       return;
     }
+    if(_drag.kind==='guide'){
+      const u=eventToUser(svg,e);
+      GUIDE_X=u.x-_drag.grabDX;
+      GUIDE_Y=u.y-_drag.grabDY;
+      const gr=svg.querySelector('#slideGuide');
+      const gl=svg.querySelector('#slideGuideLabel');
+      if(gr){gr.setAttribute('x',GUIDE_X);gr.setAttribute('y',GUIDE_Y);}
+      if(gl){gl.setAttribute('x',GUIDE_X+6);gl.setAttribute('y',GUIDE_Y+16);}
+      // grow the svg canvas (user coords) if the guide moves past current bounds
+      const curW=parseFloat(svg.getAttribute('width'))||0;
+      const curH=parseFloat(svg.getAttribute('height'))||0;
+      const needW=Math.max(curW,Math.max(0,GUIDE_X)+GUIDE_W);
+      const needH=Math.max(curH,Math.max(0,GUIDE_Y)+GUIDE_H);
+      if(needW>curW||needH>curH){
+        svg.setAttribute('width',needW); svg.setAttribute('height',needH);
+        svg.setAttribute('viewBox','0 0 '+needW+' '+needH);
+      }
+      return;
+    }
   });
 
   svg.addEventListener('pointerup',e=>{
@@ -1183,25 +1253,8 @@ function attachDragHandlers(svg){
     }
   });
 
-  // wheel zoom toward cursor (clamp 0.4–3)
-  svg.addEventListener('wheel',e=>{
-    e.preventDefault();
-    const u=(function(){
-      const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY;
-      const ctm=svg.getScreenCTM(); if(!ctm) return null;
-      return p.matrixTransform(ctm.inverse());
-    })();
-    if(!u) return;
-    const old=VIEW.zoom;
-    let nz=old*(e.deltaY<0?1.1:1/1.1);
-    nz=Math.max(0.4,Math.min(3,nz));
-    // keep the point under cursor fixed: pan' = u - (u - pan)*nz/old
-    VIEW.panX=u.x-(u.x-VIEW.panX)*nz/old;
-    VIEW.panY=u.y-(u.y-VIEW.panY)*nz/old;
-    VIEW.zoom=nz;
-    const vp=svg.querySelector('#viewport');
-    if(vp) vp.setAttribute('transform',`translate(${VIEW.panX},${VIEW.panY}) scale(${VIEW.zoom})`);
-  },{passive:false});
+  // wheel-zoom removed by request — the mouse wheel now scrolls the page normally.
+  // (VIEW.zoom is still set programmatically by fitToSlide for the 16:9 fit.)
 }
 
 // ---- live element updates during drag (avoid full re-render) ----
@@ -1268,6 +1321,7 @@ function liveResizeLogo(svg,desc,nw){
 function resetLayout(){
   LAYOUT={};
   VIEW={panX:0,panY:0,zoom:1};
+  GUIDE_X=0; GUIDE_Y=0;
   renderTimeline();
 }
 
@@ -1285,6 +1339,12 @@ function syncSpacingControls(){
   const nm=document.getElementById('spacingNum'); if(nm && document.activeElement!==nm) nm.value=SPACING;
   const lab=document.getElementById('spacingVal'); if(lab) lab.textContent=SPACING+'px';
 }
+function setFontSize(v){
+  FONT_SIZE=Math.max(6,Math.min(32,parseInt(v,10)||12));
+  const el=document.getElementById('fontSizeSel'); if(el && document.activeElement!==el) el.value=FONT_SIZE;
+  LAYOUT={};  // clear stale positions — box heights change with font size, old coords are invalid
+  fitToSlide(); // re-fit rows + spacing so everything squeezes into the 16:9 frame
+}
 function toggleGuide(){
   SHOW_GUIDE=!SHOW_GUIDE;
   const b=document.getElementById('guideBtn');
@@ -1293,6 +1353,8 @@ function toggleGuide(){
 }
 // auto-pick row count + spacing so the chart fits inside one 16:9 slide (text stays real size)
 function fitToSlide(){
+  const M=100;            // pasteboard margin so the red export frame is clearly visible inset from the edges
+  GUIDE_X=M; GUIDE_Y=M;   // place the export frame inside the margin (not flush to the canvas edge)
   const n=groupedData().length||1;
   const padXc=Math.max(70, BOXW/2+12);
   let best=null;
@@ -1312,6 +1374,25 @@ function fitToSlide(){
   const rs=document.getElementById('rowsSel'); if(rs) rs.value=ROWS;
   syncSpacingControls();
   renderTimeline();
+  // Scale + centre content inside the 16:9 guide.
+  // fitToSlide may not fully fix height overflow at large font sizes, so we apply a
+  // viewport zoom to guarantee everything fits, then pan to centre horizontally + vertically.
+  const d=window._svgDims||{W:GUIDE_W,H:GUIDE_H};
+  const scale=Math.min(GUIDE_W/Math.max(1,d.W), GUIDE_H/Math.max(1,d.H));
+  VIEW.zoom=scale;
+  // centre the fitted content inside the export frame (which sits at GUIDE_X,GUIDE_Y)
+  VIEW.panX=GUIDE_X+(GUIDE_W-d.W*scale)/2;
+  VIEW.panY=GUIDE_Y+(GUIDE_H-d.H*scale)/2;
+  const fitSvg=window._lastSVG;
+  if(fitSvg){
+    // canvas = export frame + pasteboard margin all around, so the red 16:9 box is visibly inset
+    const cw=GUIDE_W+2*M, ch=GUIDE_H+2*M;
+    fitSvg.setAttribute('width',cw);
+    fitSvg.setAttribute('height',ch);
+    fitSvg.setAttribute('viewBox','0 0 '+cw+' '+ch);
+    const vp=fitSvg.querySelector('#viewport');
+    if(vp) vp.setAttribute('transform',`translate(${VIEW.panX},${VIEW.panY}) scale(${VIEW.zoom})`);
+  }
 }
 
 // ---- save/load (extended shape) ----
@@ -1325,11 +1406,17 @@ function saveJSON(){
     phaseColors: PHASE_COLORS,
     logos: LOGOS,
     rows: ROWS,
-        spacing: SPACING,
+    spacing: SPACING,
+    fontSize: FONT_SIZE,
+    guideX: GUIDE_X, guideY: GUIDE_Y,
     layout: LAYOUT,
     view: VIEW
   };
-  dl(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),'project_timeline.json');
+  const titleText=document.getElementById('title').textContent.trim();
+  const defaultName=titleText.replace(/[^\w\- ]/g,'_').replace(/\s+/g,'_')||'project_timeline';
+  const fname=prompt('ชื่อไฟล์ JSON (ไม่ต้องใส่ .json)\nFile name (without .json):', defaultName);
+  if(fname===null) return; // user cancelled
+  dl(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),(fname.trim()||defaultName)+'.json');
 }
 function loadJSON(e){
   const f=e.target.files[0]; if(!f)return;
@@ -1379,34 +1466,23 @@ function loadJSON(e){
       { const rs=document.getElementById('rowsSel'); if(rs) rs.value=ROWS; }
       SPACING=(+j.spacing>=30)?Math.min(260,+j.spacing):90;
       syncSpacingControls();
+      if(+j.fontSize>=6){ FONT_SIZE=Math.min(32,+j.fontSize); }
+      { const fsEl=document.getElementById('fontSizeSel'); if(fsEl) fsEl.value=FONT_SIZE; }
+      if(typeof j.guideX==='number') GUIDE_X=j.guideX;
+      if(typeof j.guideY==='number') GUIDE_Y=j.guideY;
     }
     migrateDates(); renderTable(); renderTimeline();
   }catch(err){alert('ไฟล์ไม่ถูกต้อง: '+err.message);}};
   rd.readAsText(f); e.target.value='';
 }
 
-// ---- export PNG (true 16:9 PowerPoint slide: 1920x1080) ----
-// Measures the REAL drawn bounds (getBBox) so nothing is cut off, then letterboxes
-// that content (aspect-fit, centered, white margins) into an exact 1920x1080 frame.
+// ---- export PNG (true WYSIWYG 16:9 crop: whatever is inside the guide box on screen) ----
 function exportPNG(){
   const svgEl=window._lastSVG; if(!svgEl){alert('ยังไม่มีไทม์ไลน์ / No chart yet');return;}
-  const vp=svgEl.querySelector('#viewport');
-  if(!vp){alert('ยังไม่มีไทม์ไลน์ / No chart yet');return;}
-
-  // measure content bounds with the huge pan-catcher + 16:9 guide hidden
-  const hideIds=['tlBg','slideGuide','slideGuideLabel'];
-  const saved=[];
-  hideIds.forEach(id=>{ const el=svgEl.querySelector('#'+id); if(el){ saved.push([el,el.style.display]); el.style.display='none'; } });
-  let bb; try{ bb=vp.getBBox(); }catch(e){ bb=null; }
-  saved.forEach(([el,d])=>{ el.style.display=d; });
-  if(!bb||!bb.width||!bb.height){ const d=window._svgDims||{W:1280,H:720}; bb={x:0,y:0,width:d.W,height:d.H}; }
-  const pad=24;
-  const cx=bb.x-pad, cy=bb.y-pad, cw=Math.max(1,bb.width+pad*2), ch=Math.max(1,bb.height+pad*2);
-
+  // Export rectangle = the guide's USER-space rect (not content coords)
+  const cx=GUIDE_X, cy=GUIDE_Y, cw=GUIDE_W, ch=GUIDE_H;
   const clone=svgEl.cloneNode(true);
-  const cvp=clone.querySelector('#viewport');
-  if(cvp) cvp.setAttribute('transform','translate(0,0) scale(1)');
-  // drop the guide + nested logos from the vector layer (logos painted onto canvas after)
+  // DO NOT reset the #viewport transform — we WANT VIEW baked in
   ['slideGuide','slideGuideLabel'].forEach(id=>{ const el=clone.querySelector('#'+id); if(el) el.remove(); });
   clone.querySelectorAll('image').forEach(im=>im.remove());
   clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
@@ -1414,24 +1490,17 @@ function exportPNG(){
   clone.setAttribute('width',cw); clone.setAttribute('height',ch);
   clone.setAttribute('viewBox',cx+' '+cy+' '+cw+' '+ch);
   clone.removeAttribute('style');
-  // opaque white background baked in (covers exactly the cropped content box)
   const bgRect=document.createElementNS(NS,'rect');
   bgRect.setAttribute('x',cx); bgRect.setAttribute('y',cy);
   bgRect.setAttribute('width',cw); bgRect.setAttribute('height',ch);
   bgRect.setAttribute('fill','#ffffff');
   clone.insertBefore(bgRect,clone.firstChild);
-
   const data=new XMLSerializer().serializeToString(clone);
   const svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(data);
-
-  // exact 16:9 output; aspect-fit the content (no text stretching, full content kept)
-  const targetW=1920, targetH=1080;
-  const ar=cw/ch, tar=targetW/targetH;
-  let dw,dh;
-  if(ar>tar){ dw=targetW; dh=targetW/ar; } else { dh=targetH; dw=targetH*ar; }
-  const ox=(targetW-dw)/2, oy=(targetH-dh)/2;
-  const sc=dw/cw; // content-units -> canvas-px
-
+  // 4K output; guide is exactly 16:9 so no letterboxing needed
+  const targetW=3840, targetH=2160;
+  const sc=targetW/cw;   // user-units -> canvas px
+  const ox=0, oy=0, dw=targetW, dh=targetH;
   const img=new Image();
   img.onload=()=>{
     const cv=document.createElement('canvas');
@@ -1439,7 +1508,6 @@ function exportPNG(){
     const ctx=cv.getContext('2d');
     ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,targetW,targetH);
     ctx.drawImage(img, ox, oy, dw, dh);
-
     const placements=(window._logoPlacements||[]);
     const finish=()=>cv.toBlob(b=>{ if(b){dl(b,'project_timeline_16x9.png');} else {alert('Export ไม่สำเร็จ / Export failed');} });
     if(!placements.length){ finish(); return; }
@@ -1447,7 +1515,9 @@ function exportPNG(){
     placements.forEach(pl=>{
       const lim=new Image();
       lim.onload=()=>{
-        const bx=ox+(pl.x-cx)*sc, by=oy+(pl.y-cy)*sc, bw=pl.w*sc, bh=pl.h*sc;
+        // content coord -> user coord (bake VIEW) -> canvas px (subtract crop origin, * sc)
+        const ux=pl.x*VIEW.zoom+VIEW.panX, uy=pl.y*VIEW.zoom+VIEW.panY;
+        const bx=(ux-cx)*sc, by=(uy-cy)*sc, bw=pl.w*VIEW.zoom*sc, bh=pl.h*VIEW.zoom*sc;
         const a=(lim.naturalWidth||1)/(lim.naturalHeight||1);
         let lw=bw, lh=bw/a;
         if(lh>bh){ lh=bh; lw=bh*a; }
