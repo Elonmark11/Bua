@@ -202,6 +202,12 @@
       <input type="number" id="fontSizeSel" min="6" max="32" value="12" onchange="setFontSize(this.value)" style="width:52px">
       px
     </label>
+    <label>ซูมดู / Zoom:
+      <button onclick="zoomChart(1/1.2)" title="ซูมออก / Zoom out">🔍−</button>
+      <span id="zoomVal" style="color:#666;min-width:42px;text-align:center;display:inline-block">100%</span>
+      <button onclick="zoomChart(1.2)" title="ซูมเข้า / Zoom in">🔍+</button>
+      <button onclick="fitWidth()" title="พอดีความกว้าง / Fit to width">⤢ พอดีกว้าง</button>
+    </label>
   </div>
 
   <div class="tl-wrap">
@@ -740,6 +746,7 @@ const LOGO_DEFW=84;      // default enlarged logo width
     const BOXW=160;          // fixed, readable box width (independent of dot pitch)
     let SPACING=90;          // dot pitch in px; live "Spacing" slider (squeeze the timeline)
     let FONT_SIZE=12;        // chart text size in SVG units; editable via font size control
+    let UI_ZOOM=1;           // display-only zoom: 1 = fit container width; >1 enlarges (scroll to move). Does NOT affect export.
 
 // ---- 16:9 PowerPoint slide guide (13.33in x 7.5in @ 96dpi ≈ 1280 x 720) ----
 const GUIDE_W=1280, GUIDE_H=720;
@@ -1038,6 +1045,30 @@ function renderTimeline(){
   window._tlState={axisY:(rowsData[0]?rowsData[0].axisY:0),axisMinX,axisMaxX,boxW,W,H};
   attachDragHandlers(svg);
   renderStatusLegend();
+  applyUiZoom();  // apply the display-zoom to the freshly built svg
+}
+
+// ---- display-only zoom (does NOT affect export) ----
+// UI_ZOOM=1 fits the chart to the container width; >1 enlarges it so the frame
+// scrollbars let you move up/down/left/right. Export always uses the guide rect, unaffected.
+function applyUiZoom(){
+  const svg=window._lastSVG, frame=document.getElementById('slideFrame');
+  if(!svg||!frame) return;
+  const w=parseFloat(svg.getAttribute('width'))||1;
+  const h=parseFloat(svg.getAttribute('height'))||1;
+  const fitW=Math.max(1,frame.clientWidth-4);   // px width that fits the container at 100%
+  const dispW=fitW*UI_ZOOM;
+  svg.style.width=dispW+'px';
+  svg.style.height=(dispW*(h/w))+'px';           // preserve aspect ratio
+  const lab=document.getElementById('zoomVal'); if(lab) lab.textContent=Math.round(UI_ZOOM*100)+'%';
+}
+function zoomChart(f){
+  UI_ZOOM=Math.max(0.2,Math.min(5,UI_ZOOM*f));
+  applyUiZoom();
+}
+function fitWidth(){
+  UI_ZOOM=1;
+  applyUiZoom();
 }
 
 // connector attach point on the box: manual offset (cdx,cdy) from box top-left,
@@ -1233,6 +1264,7 @@ function attachDragHandlers(svg){
       if(needW>curW||needH>curH){
         svg.setAttribute('width',needW); svg.setAttribute('height',needH);
         svg.setAttribute('viewBox','0 0 '+needW+' '+needH);
+        applyUiZoom();  // keep display-zoom consistent with the new canvas size
       }
       return;
     }
@@ -1393,6 +1425,7 @@ function fitToSlide(){
     const vp=fitSvg.querySelector('#viewport');
     if(vp) vp.setAttribute('transform',`translate(${VIEW.panX},${VIEW.panY}) scale(${VIEW.zoom})`);
   }
+  applyUiZoom();  // re-apply display-zoom after the canvas size changed
 }
 
 // ---- save/load (extended shape) ----
