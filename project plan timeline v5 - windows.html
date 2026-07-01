@@ -147,6 +147,16 @@
       <input type="number" id="showN" min="0" onchange="setShowN(this.value)" style="font-family:inherit;font-size:15px;width:56px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
     </label>
     <span id="showCount" style="font-size:15px;color:#666"></span>
+    <label style="font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:5px">ขนาดหน้า / Page zoom:
+      <select id="pageZoomSel" onchange="setPageZoom(this.value)" style="font-family:inherit;font-size:15px;padding:6px 8px;border-radius:8px;border:.5px solid var(--line);background:#fff">
+        <option value="1">100%</option>
+        <option value="1.1">110%</option>
+        <option value="1.25" selected>125%</option>
+        <option value="1.5">150%</option>
+        <option value="1.75">175%</option>
+        <option value="2">200%</option>
+      </select>
+    </label>
     <div class="spacer"></div>
     <button onclick="exportPNG()">🖼 Export PNG</button>
     <button onclick="window.print()">🖨 Print / PDF</button>
@@ -1706,10 +1716,17 @@ function dl(blob,name){
   a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
 }
 
+// ---- whole-page zoom (helps small/high-DPI Windows screens; scales UI + chart, not the export) ----
+function setPageZoom(v){
+  document.body.style.zoom = v;
+  const s=document.getElementById('pageZoomSel'); if(s) s.value=v;
+}
+
 // ---- debounced resize re-flow ----
 let _rzT; window.addEventListener('resize',()=>{ clearTimeout(_rzT); _rzT=setTimeout(()=>renderTimeline(),150); });
 
 // ---- init ----
+setPageZoom((document.getElementById('pageZoomSel')||{}).value||'1.25');
 syncSpacingControls();
 syncBoxWidthControls();
 syncLogoSizeControls();
